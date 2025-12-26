@@ -14,7 +14,6 @@ Paper textbooks or PDF versions are inconvenient for fast search: users must man
 
 Our assistant allows users to ask questions in natural Ukrainian and receive a well-grounded textual answer together with relevant illustrations directly sourced from official school textbooks.
 
----
 
 ## MVP Scope (First Version)
 
@@ -30,7 +29,6 @@ Our assistant allows users to ask questions in natural Ukrainian and receive a w
 - Image generation, image editing, or user file uploads.
 - Multi-user mode, authentication, or chat history storage.
 
----
 
 ## Content & Data
 
@@ -46,7 +44,6 @@ Official electronic versions (PDF) of Ukrainian and World History school textboo
 ### **Text–Image Linking**
 Images are linked to text via page numbers, automatically extracted titles/captions (e.g., “Fig. 1. Map of Kyivan Rus”, “Photo. Taras Shevchenko”), and PDF metadata.
 
----
 
 ## Example Queries (in Ukrainian)
 
@@ -63,7 +60,6 @@ Images are linked to text via page numbers, automatically extracted titles/capti
 дня 27 квітня 1849 року арештували мене роз’ярені мадяри, і спочатку 
 в міському домі Пряшева заперли…”?*
 
----
 
 ## Success Criteria
 
@@ -71,7 +67,6 @@ Images are linked to text via page numbers, automatically extracted titles/capti
 - **Answer Faithfulness:** Answers contain only information from the retrieved sources and include citations. If data is missing, the system responds: *“Insufficient information.”*
 - **UI Usability:** Users can view the answer, citations, and enlarged images with a single click.
 
----
 
 ## Interface Expectations
 
@@ -80,7 +75,6 @@ Images are linked to text via page numbers, automatically extracted titles/capti
 - Sources panel (text excerpts with textbook title and page number).
 - Images panel (thumbnails with captions, click to enlarge).
 
----
 
 ## Initial Technical Choices
 
