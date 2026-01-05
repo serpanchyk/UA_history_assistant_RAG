@@ -6,6 +6,7 @@ def scrap_data():
     docs_path = Path('../data/pdfs')
     images_path = Path('../data/images')
     dfs_path = Path('../data/dfs')
+    images_path.mkdir(parents=True, exist_ok=True)
 
     df_docs = pd.read_csv(dfs_path / 'docs.csv', index_col='id')
 
@@ -32,17 +33,23 @@ def scrap_data():
                         'doc_id': index
                     })
 
-                elif block['type'] == 1:
-                    image_path = images_path / f"doc{index}_page{page.number}_{block['number']}.{block['ext']}"
-                    with open(image_path, "wb") as f:
-                        f.write(block['image'])
+            for image in page.get_images(full=True):
+                xref = image[0]
+                d = doc.extract_image(xref)
+                ext = d["ext"]
+                img_bytes = d["image"]
 
-                    rows_images.append({
-                        'image_path': str(image_path.name),
-                        'bbox': tuple(block['bbox']),
-                        'page': page.number,
-                        'doc_id': index
-                    })
+                image_path = images_path / f"doc{index}_page{page.number}_{xref}.{ext}"
+
+                with open(image_path, "wb") as f:
+                    f.write(img_bytes)
+
+                rows_images.append({
+                    'image_path': str(image_path.name),
+                    'bbox': tuple(block['bbox']),
+                    'page': page.number,
+                    'doc_id': index
+                })
 
     df_text = pd.DataFrame(rows_text)
     df_images = pd.DataFrame(rows_images)
