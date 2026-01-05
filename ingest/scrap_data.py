@@ -8,6 +8,12 @@ IMAGES_PATH.mkdir(parents=True, exist_ok=True)
 DFS_PATH = Path('../data/dfs')
 
 def scrap_text():
+    """
+    Takes texbook pdfs from docs dataset.
+    Iterates through their pages. Retrieves text boxes and saves to dataset
+    with box coordinates, page number and doc id. Saves text boxes to csv file.
+    """
+
     df_docs = pd.read_csv(DFS_PATH / 'docs.csv', index_col='id')
 
     rows_text = []
@@ -35,10 +41,15 @@ def scrap_text():
 
 
     df_text = pd.DataFrame(rows_text)
-
     df_text.to_csv(DFS_PATH / 'texts.csv')
 
 def scrap_images():
+    """
+    Takes texbook pdfs from docs dataset.
+    Iterates through their pages. Retrieves images and saves to data dir
+    and saves to dataset its path with box coordinates, page number and doc id.
+    Saves dataset to csv file.
+    """
     df_docs = pd.read_csv(DFS_PATH / 'docs.csv', index_col='id')
 
     rows_images = []
