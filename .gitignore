@@ -3,3 +3,5 @@ __pycache__/
 .idea/
 models/
 *.gguf
+*.png
+images/
