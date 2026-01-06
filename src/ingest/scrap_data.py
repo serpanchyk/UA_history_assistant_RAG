@@ -2,10 +2,12 @@ import pymupdf
 from pathlib import Path
 import pandas as pd
 
-DOCS_PATH = Path('../data/pdfs')
-IMAGES_PATH = Path('../data/images')
+from src import PROJECT_PATH
+
+DOCS_PATH = PROJECT_PATH /  Path('data/pdfs')
+IMAGES_PATH = PROJECT_PATH /  Path('data/images')
 IMAGES_PATH.mkdir(parents=True, exist_ok=True)
-DFS_PATH = Path('../data/dfs')
+DFS_PATH = PROJECT_PATH /  Path('data/dfs')
 
 def scrap_text():
     """
@@ -80,8 +82,3 @@ def scrap_images():
 
     df_images = pd.DataFrame(rows_images)
     df_images.to_csv(DFS_PATH / 'images.csv')
-
-
-if __name__ == '__main__':
-    scrap_text()
-    scrap_images()

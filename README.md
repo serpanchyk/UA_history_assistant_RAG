@@ -37,12 +37,12 @@ Official electronic versions (PDF) of Ukrainian and World History school textboo
 
 ### **Target Volume**
 - 250 pages in average in one book.
-- 14 textbooks (approximately 3,500 pages total).
+- 11 textbooks (approximately 2,750 pages total).
 - 300 words on one page (420 tokens)
 - 1 embedding can take 1024 tokens
 - 2 pages of text per chunk
 - After processing:
-  - 1750 text chunks
+  - 1375 text chunks
   - 3000–5000 images (maps, portraits, diagrams, photographs)
 
 ### **Text–Image Linking **
