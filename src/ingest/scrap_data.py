@@ -2,12 +2,25 @@ import pymupdf
 from pathlib import Path
 import pandas as pd
 
+import unicodedata
+import re
+
 from src import PROJECT_PATH
 
 DOCS_PATH = PROJECT_PATH /  Path('data/pdfs')
 IMAGES_PATH = PROJECT_PATH /  Path('data/images')
 IMAGES_PATH.mkdir(parents=True, exist_ok=True)
 DFS_PATH = PROJECT_PATH /  Path('data/dfs')
+
+def normalise_text(text: str) -> str:
+    if not isinstance(text, str):
+        return text
+
+    text = unicodedata.normalize("NFKC", text)
+    text = re.sub(r"[\x00-\x1F\x7F]", " ", text)
+    text = text.replace("\u00A0", " ")
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
 def scrap_text():
     """
@@ -35,7 +48,7 @@ def scrap_text():
                 )
 
                 rows_text.append({
-                    'text': text,
+                    'text': normalise_text(text),
                     'bbox': tuple(block['bbox']),
                     'page': page.number,
                     'doc_id': index
