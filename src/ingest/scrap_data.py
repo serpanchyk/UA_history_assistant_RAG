@@ -16,7 +16,7 @@ def scrap_text():
     with box coordinates, page number and doc id. Saves text boxes to csv file.
     """
 
-    df_docs = pd.read_csv(DFS_PATH / 'docs.csv', index_col='id')
+    df_docs = pd.read_csv(DFS_PATH / 'docs.csv')
 
     rows_text = []
     for index, doc_row in df_docs.iterrows():
@@ -43,7 +43,7 @@ def scrap_text():
 
 
     df_text = pd.DataFrame(rows_text)
-    df_text.to_csv(DFS_PATH / 'texts.csv')
+    df_text.to_pickle(DFS_PATH / 'texts.pkl')
 
 def scrap_images():
     """
@@ -52,7 +52,7 @@ def scrap_images():
     and saves to dataset its path with box coordinates, page number and doc id.
     Saves dataset to csv file.
     """
-    df_docs = pd.read_csv(DFS_PATH / 'docs.csv', index_col='id')
+    df_docs = pd.read_csv(DFS_PATH / 'docs.csv')
 
     rows_images = []
     for index, doc_row in df_docs.iterrows():
@@ -81,4 +81,4 @@ def scrap_images():
                 })
 
     df_images = pd.DataFrame(rows_images)
-    df_images.to_csv(DFS_PATH / 'images.csv')
+    df_images.to_pickle(DFS_PATH / 'images.pkl')

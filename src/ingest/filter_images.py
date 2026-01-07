@@ -39,7 +39,7 @@ def is_gradient(gray_image, threshold=100):
     return laplacian_var < threshold
 
 def filter_images():
-    df_images = pd.read_csv(dfs_path / 'images.csv', index_col=0)
+    df_images = pd.read_pickle(dfs_path / 'images.pkl')
 
     filtered = []
 
@@ -58,3 +58,4 @@ def filter_images():
             image_path.rename(rejected_images_path / image_row['image_path'])
 
     df_images['filtered'] = filtered
+    df_images.to_pickle(dfs_path / 'images.pkl')
