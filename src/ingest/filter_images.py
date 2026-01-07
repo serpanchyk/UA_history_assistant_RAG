@@ -1,14 +1,8 @@
 import pandas as pd
-from pathlib import Path
 import cv2
 from pyzbar.pyzbar import decode
 
-from src import PROJECT_PATH
-
-dfs_path = PROJECT_PATH / Path('data/dfs/')
-images_path = PROJECT_PATH /  Path('data/images/')
-rejected_images_path = images_path / Path('rejected_images/')
-rejected_images_path.mkdir(parents=True, exist_ok=True)
+from src import IMAGES_DIR_PATH, REJECTED_IMAGES_DIR_PATH, IMAGES_DF_PATH
 
 def is_qrcode(gray_image):
     detected_objects = decode(gray_image)
@@ -39,12 +33,12 @@ def is_gradient(gray_image, threshold=100):
     return laplacian_var < threshold
 
 def filter_images():
-    df_images = pd.read_pickle(dfs_path / 'images.pkl')
+    df_images = pd.read_pickle(IMAGES_DF_PATH)
 
     filtered = []
 
     for index, image_row in df_images.iterrows():
-        image_path = images_path / image_row['image_path']
+        image_path = IMAGES_DIR_PATH / image_row['image_path']
         image = cv2.imread(image_path)
 
         if image is None:
@@ -55,7 +49,7 @@ def filter_images():
             filtered.append(not (is_qrcode(gray_image) or is_gradient(gray_image)))
 
         if not filtered[-1]:
-            image_path.rename(rejected_images_path / image_row['image_path'])
+            image_path.rename(REJECTED_IMAGES_DIR_PATH/ image_row['image_path'])
 
     df_images['filtered'] = filtered
-    df_images.to_pickle(dfs_path / 'images.pkl')
+    df_images.to_pickle(IMAGES_DF_PATH)

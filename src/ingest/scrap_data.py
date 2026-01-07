@@ -1,16 +1,12 @@
 import pymupdf
-from pathlib import Path
 import pandas as pd
 
 import unicodedata
 import re
 
-from src import PROJECT_PATH
+from src import PROJECT_PATH, IMAGES_DF_PATH, TEXTBOOKS_DF_PATH, TEXTBOOKS_DF_PATH, IMAGES_DIR_PATH, TEXTBOOKS_DIR_PATH, \
+    TEXT_BLOKS_DF_PATH
 
-DOCS_PATH = PROJECT_PATH /  Path('data/pdfs')
-IMAGES_PATH = PROJECT_PATH /  Path('data/images')
-IMAGES_PATH.mkdir(parents=True, exist_ok=True)
-DFS_PATH = PROJECT_PATH /  Path('data/dfs')
 
 def normalise_text(text: str) -> str:
     if not isinstance(text, str):
@@ -29,11 +25,11 @@ def scrap_text():
     with box coordinates, page number and doc id. Saves text boxes to csv file.
     """
 
-    df_docs = pd.read_csv(DFS_PATH / 'docs.csv')
+    df_docs = pd.read_csv(TEXTBOOKS_DF_PATH)
 
     rows_text = []
     for index, doc_row in df_docs.iterrows():
-        file_path = DOCS_PATH / doc_row['pdf_name']
+        file_path = TEXTBOOKS_DIR_PATH / doc_row['pdf_name']
         doc = pymupdf.open(file_path)
 
         for page in doc:
@@ -56,7 +52,7 @@ def scrap_text():
 
 
     df_text = pd.DataFrame(rows_text)
-    df_text.to_pickle(DFS_PATH / 'texts.pkl')
+    df_text.to_pickle(TEXT_BLOKS_DF_PATH)
 
 def scrap_images():
     """
@@ -65,11 +61,11 @@ def scrap_images():
     and saves to dataset its path with box coordinates, page number and doc id.
     Saves dataset to csv file.
     """
-    df_docs = pd.read_csv(DFS_PATH / 'docs.csv')
+    df_docs = pd.read_csv(TEXTBOOKS_DF_PATH)
 
     rows_images = []
     for index, doc_row in df_docs.iterrows():
-        file_path = DOCS_PATH / doc_row['pdf_name']
+        file_path = TEXTBOOKS_DIR_PATH / doc_row['pdf_name']
         doc = pymupdf.open(file_path)
 
         for page in doc:
@@ -81,7 +77,7 @@ def scrap_images():
                 ext = block["ext"]
                 img_bytes = block["image"]
 
-                image_path = IMAGES_PATH / f"doc{index}_page{page.number}_{i}.{ext}"
+                image_path = IMAGES_DIR_PATH / f"doc{index}_page{page.number}_{i}.{ext}"
 
                 with open(image_path, "wb") as f:
                     f.write(img_bytes)
@@ -94,4 +90,4 @@ def scrap_images():
                 })
 
     df_images = pd.DataFrame(rows_images)
-    df_images.to_pickle(DFS_PATH / 'images.pkl')
+    df_images.to_pickle(IMAGES_DF_PATH)
