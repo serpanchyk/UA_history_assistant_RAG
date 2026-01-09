@@ -1,10 +1,13 @@
 import pandas as pd
 import cv2
 from pyzbar.pyzbar import decode
+import numpy as np
 
-from src import IMAGES_DIR_PATH, REJECTED_IMAGES_DIR_PATH, IMAGES_DF_PATH
+from src import IMAGES_DIR_PATH, REJECTED_IMAGES_DIR_PATH
+from src.io.images import move_image
 
-def is_qrcode(gray_image):
+
+def is_qrcode(gray_image: np.ndarray) -> bool:
     detected_objects = decode(gray_image)
     if detected_objects:
         return True
@@ -14,7 +17,8 @@ def is_qrcode(gray_image):
 
     return len(detected_objects) > 0
 
-def is_gradient(gray_image, threshold=100):
+def is_gradient(gray_image: np.ndarray) -> bool:
+    threshold = 100
 
     h, w = gray_image.shape
 
@@ -32,9 +36,7 @@ def is_gradient(gray_image, threshold=100):
     laplacian_var = cv2.Laplacian(cropped_image, cv2.CV_64F).var()
     return laplacian_var < threshold
 
-def filter_images():
-    df_images = pd.read_pickle(IMAGES_DF_PATH)
-
+def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     filtered = []
 
     for index, image_row in df_images.iterrows():
@@ -49,7 +51,7 @@ def filter_images():
             filtered.append(not (is_qrcode(gray_image) or is_gradient(gray_image)))
 
         if not filtered[-1]:
-            image_path.rename(REJECTED_IMAGES_DIR_PATH/ image_row['image_path'])
+            move_image(image_path, REJECTED_IMAGES_DIR_PATH)
 
     df_images['filtered'] = filtered
-    df_images.to_pickle(IMAGES_DF_PATH)
+    return df_images

@@ -1,22 +1,19 @@
 import pandas as pd
 
-from src import IMAGES_DF_PATH, TEXT_BLOKS_DF_PATH
 
-def get_centroid(bbox):
+def get_centroid(bbox: tuple) -> tuple:
     return ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
 
-def get_distance_squared(c1, c2):
+def get_distance_squared(c1: tuple, c2: tuple) -> float:
     return (c2[0] - c1[0])**2 + (c2[1] - c1[1])**2
 
-def link_image_to_text():
-    images_df = pd.read_pickle(IMAGES_DF_PATH)
-    text_blocks_df = pd.read_pickle(TEXT_BLOKS_DF_PATH)
+def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) -> pd.DataFrame:
 
-    for index, image_row in images_df.iterrows():
+    for index, image_row in df_images.iterrows():
 
-        texts_candidates_df = text_blocks_df[
-            (text_blocks_df['doc_id'] == image_row['doc_id']) &
-            (text_blocks_df['page'] == image_row['page'])
+        texts_candidates_df = df_text_blocks[
+            (df_text_blocks['doc_id'] == image_row['doc_id']) &
+            (df_text_blocks['page'] == image_row['page'])
             ]
 
         if texts_candidates_df.empty:
@@ -28,6 +25,6 @@ def link_image_to_text():
         )
 
         idx = texts_candidates_df['bbox'].apply(distance_criteria).idxmin()
-        images_df.loc[index, 'caption'] = texts_candidates_df.loc[idx, 'text']
+        df_images.loc[index, 'caption'] = texts_candidates_df.loc[idx, 'text']
 
-    images_df.to_pickle(IMAGES_DF_PATH)
+    return df_images

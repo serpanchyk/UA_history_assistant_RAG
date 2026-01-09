@@ -1,24 +1,17 @@
 import pymupdf
 import pandas as pd
 
-from src import IMAGES_DF_PATH, TEXTBOOKS_DF_PATH, IMAGES_DIR_PATH, TEXTBOOKS_DIR_PATH, \
-    TEXT_BLOKS_DF_PATH
+from src.io.images import write_image
+from src import IMAGES_DF_PATH, TEXTBOOKS_DF_PATH, IMAGES_DIR_PATH, TEXTBOOKS_DIR_PATH
 from src.utils.normalize import normalize_text
 
 TEXT_BLOCK = 0
 IMAGE_BLOCK = 1
 
-def extract_text_blocks():
-    """
-    Takes texbook pdfs from docs dataset.
-    Iterates through their pages. Retrieves text boxes and saves to dataset
-    with box coordinates, page number and doc id. Saves text boxes to csv file.
-    """
-
-    df_docs = pd.read_csv(TEXTBOOKS_DF_PATH)
+def extract_text_blocks(df_docs: pd.DataFrame) -> list[dict]:
 
     for doc_id, doc_row in df_docs.iterrows():
-        file_path = TEXTBOOKS_DIR_PATH / doc_row['name']
+        file_path = TEXTBOOKS_DIR_PATH / doc_row['pdf_name']
 
         with pymupdf.open(file_path) as doc:
             rows_text = []
@@ -44,20 +37,12 @@ def extract_text_blocks():
                         'doc_id': doc_id
                     })
 
-    df_text = pd.DataFrame(rows_text)
-    df_text.to_pickle(TEXT_BLOKS_DF_PATH)
+    return rows_text
 
-def extract_images():
-    """
-    Takes texbook pdfs from docs dataset.
-    Iterates through their pages. Retrieves images and saves to data dir
-    and saves to dataset its path with box coordinates, page number and doc id.
-    Saves dataset to csv file.
-    """
-    df_docs = pd.read_csv(TEXTBOOKS_DF_PATH)
+def extract_images(df_docs: pd.DataFrame) -> list[dict]:
 
     for doc_id, doc_row in df_docs.iterrows():
-        file_path = TEXTBOOKS_DIR_PATH / doc_row['name']
+        file_path = TEXTBOOKS_DIR_PATH / doc_row['pdf_name']
 
         with pymupdf.open(file_path) as doc:
             rows_images = []
@@ -68,15 +53,14 @@ def extract_images():
                         continue
 
                     ext = block["ext"]
-                    img_bytes = block["image"]
+                    image_bytes = block["image"]
 
-                    if not img_bytes:
+                    if not image_bytes:
                         continue
 
                     image_path = IMAGES_DIR_PATH / f"doc{doc_id}_page{page.number}_{i}.{ext}"
 
-                    with open(image_path, "wb") as f:
-                        f.write(img_bytes)
+                    write_image(image_bytes, image_path)
 
                     rows_images.append({
                         'image_path': str(image_path.name),
@@ -85,5 +69,4 @@ def extract_images():
                         'doc_id': doc_id
                     })
 
-    df_images = pd.DataFrame(rows_images)
-    df_images.to_pickle(IMAGES_DF_PATH)
+    return rows_images
