@@ -39,8 +39,8 @@ def is_gradient(gray_image: np.ndarray) -> bool:
 def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     filtered = []
 
-    for index, image_row in df_images.iterrows():
-        image_path = IMAGES_DIR_PATH / image_row['image_path']
+    for image_row in df_images.itertuples():
+        image_path = IMAGES_DIR_PATH / image_row.image_path
         image = cv2.imread(image_path)
 
         if image is None:
@@ -54,4 +54,5 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
             move_image(image_path, REJECTED_IMAGES_DIR_PATH)
 
     df_images['filtered'] = filtered
-    return df_images
+
+    return df_images[df_images.filtered == True]

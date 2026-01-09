@@ -2,7 +2,7 @@ import pymupdf
 import pandas as pd
 
 from src.io.images import write_image
-from src import IMAGES_DF_PATH, TEXTBOOKS_DF_PATH, IMAGES_DIR_PATH, TEXTBOOKS_DIR_PATH
+from src import IMAGES_DIR_PATH, TEXTBOOKS_DIR_PATH
 from src.utils.normalize import normalize_text
 
 TEXT_BLOCK = 0
@@ -10,8 +10,8 @@ IMAGE_BLOCK = 1
 
 def extract_text_blocks(df_docs: pd.DataFrame) -> list[dict]:
 
-    for doc_id, doc_row in df_docs.iterrows():
-        file_path = TEXTBOOKS_DIR_PATH / doc_row['pdf_name']
+    for doc_row in df_docs.itertuples():
+        file_path = TEXTBOOKS_DIR_PATH / doc_row.pdf_name
 
         with pymupdf.open(file_path) as doc:
             rows_text = []
@@ -34,15 +34,15 @@ def extract_text_blocks(df_docs: pd.DataFrame) -> list[dict]:
                         'text': normalize_text(text),
                         'bbox': tuple(block['bbox']),
                         'page': page.number,
-                        'doc_id': doc_id
+                        'doc_id': doc_row.doc_id
                     })
 
     return rows_text
 
 def extract_images(df_docs: pd.DataFrame) -> list[dict]:
 
-    for doc_id, doc_row in df_docs.iterrows():
-        file_path = TEXTBOOKS_DIR_PATH / doc_row['pdf_name']
+    for doc_row in df_docs.itertuples():
+        file_path = TEXTBOOKS_DIR_PATH / doc_row.pdf_name
 
         with pymupdf.open(file_path) as doc:
             rows_images = []
@@ -58,15 +58,15 @@ def extract_images(df_docs: pd.DataFrame) -> list[dict]:
                     if not image_bytes:
                         continue
 
-                    image_path = IMAGES_DIR_PATH / f"doc{doc_id}_page{page.number}_{i}.{ext}"
+                    image_path = IMAGES_DIR_PATH / f"doc{doc_row.doc_id}_page{page.number}_{i}.{ext}"
 
                     write_image(image_bytes, image_path)
 
                     rows_images.append({
-                        'image_path': str(image_path.name),
+                        'path': str(image_path),
                         'bbox': tuple(block['bbox']),
                         'page': page.number,
-                        'doc_id': doc_id
+                        'doc_id': doc_row.doc_id
                     })
 
     return rows_images
