@@ -1,17 +1,12 @@
 import pandas as pd
-from math import sqrt
 
 from src import IMAGES_DF_PATH, TEXT_BLOKS_DF_PATH
 
-def find_centroid(bbox: tuple):
-    return bbox[2] - bbox[0] / 2, bbox[3] - bbox[1] / 2
+def get_centroid(bbox):
+    return ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
 
-def get_distance(first_bbox: tuple, second_bbox: tuple):
-    first_centroid = find_centroid(first_bbox)
-    second_centroid = find_centroid(second_bbox)
-
-    return sqrt((second_centroid[0] - first_centroid[0]) ** 2
-                + (second_centroid[1] - first_centroid[0]) ** 2)
+def get_distance_squared(c1, c2):
+    return (c2[0] - c1[0])**2 + (c2[1] - c1[1])**2
 
 def link_image_to_text():
     images_df = pd.read_pickle(IMAGES_DF_PATH)
@@ -27,9 +22,9 @@ def link_image_to_text():
         if texts_candidates_df.empty:
             continue
 
-        distance_criteria = lambda second_bbox: get_distance(
-            first_bbox=image_row['bbox'],
-            second_bbox=second_bbox
+        distance_criteria = lambda second_bbox: get_distance_squared(
+            c1=get_centroid(image_row['bbox']),
+            c2=get_centroid(second_bbox)
         )
 
         idx = texts_candidates_df['bbox'].apply(distance_criteria).idxmin()
