@@ -6,7 +6,7 @@ DATA_PATH = PROJECT_PATH / "data"
 DFS_PATH = DATA_PATH / "dfs"
 TEXTBOOKS_DF_PATH = DFS_PATH / "textbooks.parquet"
 IMAGES_DF_PATH = DFS_PATH / "images.parquet"
-TEXT_BLOKS_DF_PATH = DFS_PATH / "text_blocks.parquet"
+TEXT_BLOCKS_DF_PATH = DFS_PATH / "text_blocks.parquet"
 
 TEXTBOOKS_DIR_PATH = DATA_PATH / "pdfs/"
 
