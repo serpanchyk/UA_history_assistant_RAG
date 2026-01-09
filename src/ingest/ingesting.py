@@ -1,7 +1,7 @@
 import pandas as pd
 
 from src.ingest.caption_linking import link_image_to_text
-from src.ingest.extraction import extract_text_blocks, extract_images
+from src.ingest.extraction import extract_data
 from src.ingest.filter_images import filter_images
 from src.io.dataframes import read_parquet, write_parquet
 
@@ -14,8 +14,10 @@ def run_ingesting():
 
     textbooks_df = read_parquet(TEXTBOOKS_DF_PATH)
 
-    text_blocks_df = pd.DataFrame(extract_text_blocks(textbooks_df))
-    images_df = pd.DataFrame(extract_images(textbooks_df))
+    text_blocks_df, images_df = tuple(
+        pd.DataFrame(lst)
+        for lst in extract_data(textbooks_df)
+    )
 
     images_df = filter_images(images_df)
 
