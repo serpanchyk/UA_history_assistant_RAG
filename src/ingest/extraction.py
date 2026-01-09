@@ -63,14 +63,14 @@ def extract_data(df_docs: pd.DataFrame) -> tuple[list, list]:
                 for i, block in enumerate(page_data['blocks']):
 
                     if block['type'] == TEXT_BLOCK:
-                        text_info = extract_text_block(block, page.number, doc_row.doc_id)
+                        text_info = extract_text_block(block, page.number, doc_row.Index)
 
                         if not text_info:
                             continue
                         rows_text.append(text_info)
 
                     if block['type'] == IMAGE_BLOCK:
-                        image_info = extract_image(block, doc_row.doc_id, page.number, doc_row.doc_id)
+                        image_info = extract_image(block, doc_row.Index, page.number, i)
 
                         if not image_info:
                             continue

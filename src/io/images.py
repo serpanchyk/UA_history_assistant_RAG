@@ -1,7 +1,8 @@
 import shutil
 from pathlib import Path
 
-from .filesystem import ensure_parent_dir
+from .filesystem import ensure_parent_dir, ensure_dir
+
 
 def read_image(path: Path) -> bytes:
     if not path.exists():
@@ -19,7 +20,7 @@ def move_image(image_path: Path, target_dir: Path) -> Path:
     if not image_path.exists():
         raise FileNotFoundError(f"Image not found: {image_path}")
 
-    ensure_parent_dir(target_dir)
+    ensure_dir(target_dir)
 
     new_path = target_dir / image_path.name
 

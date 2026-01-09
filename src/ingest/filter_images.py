@@ -40,7 +40,7 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     filtered = []
 
     for image_row in df_images.itertuples():
-        image_path = IMAGES_DIR_PATH / image_row.image_path
+        image_path = IMAGES_DIR_PATH / image_row.path
         image = cv2.imread(image_path)
 
         if image is None:
