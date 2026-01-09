@@ -24,11 +24,6 @@ def link_image_to_text():
             (text_blocks_df['page'] == image_row['page'])
             ]
 
-        # To not include noise text blocks
-        texts_candidates_df = texts_candidates_df[
-            texts_candidates_df['text'].str.len() >= 5
-            ]
-
         if texts_candidates_df.empty:
             continue
 
