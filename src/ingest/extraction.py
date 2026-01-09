@@ -21,7 +21,7 @@ def extract_text_block(block: dict, doc_id: int, page_number: int) -> dict | Non
 
     block_info = {
         'text': normalize_text(text),
-        'bbox': tuple(block['bbox']),
+        'bbox': list(block['bbox']),
         'page': page_number,
         'doc_id': doc_id
     }
@@ -42,7 +42,7 @@ def extract_image(block: dict, doc_id, page_number: int,  idx: int) -> dict | No
 
     image_info = {
         'path': str(image_path),
-        'bbox': tuple(block['bbox']),
+        'bbox': list(block['bbox']),
         'page': page_number,
         'doc_id': doc_id
     }

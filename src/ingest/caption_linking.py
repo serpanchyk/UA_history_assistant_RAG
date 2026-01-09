@@ -13,7 +13,7 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
 
         texts_candidates_df = df_text_blocks[
             (df_text_blocks['doc_id'] == image_row.doc_id) &
-            (df_text_blocks['page'] == image_row['page'])
+            (df_text_blocks['page'] == image_row.page)
             ]
 
         if texts_candidates_df.empty:
