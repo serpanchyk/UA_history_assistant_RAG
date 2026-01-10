@@ -46,22 +46,23 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered DataFrame containing only valid images.
     """
-    filtered = []
+    keep_indices = []
 
-    for image_row in df_images.itertuples():
+    for idx, image_row in enumerate(df_images.itertuples()):
         image_path = Path(image_row.path)
         image = cv2.imread(str(image_path))
 
         if image is None:
-            filtered.append(False)
+            keep_image = False
             logger.warning(f"Image could not be read: {image_path}")
         else:
             gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             keep_image = not (is_qrcode(gray_image) or is_gradient(gray_image))
-            filtered.append(keep_image)
 
-            if not keep_image:
-                move_image(image_path, REJECTED_IMAGES_DIR_PATH)
+        if keep_image:
+            keep_indices.append(idx)
+        else:
+            move_image(image_path, REJECTED_IMAGES_DIR_PATH)
 
-    df_images['filtered'] = filtered
-    return df_images[df_images.filtered == True]
+
+    return df_images.iloc[keep_indices]
