@@ -31,7 +31,7 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
     Returns:
         pd.DataFrame: Images DataFrame with 'caption' column added.
     """
-    for image_row in df_images.itertuples():
+    for idx, image_row in enumerate(df_images.itertuples()):
         texts_candidates_df = df_text_blocks[
             (df_text_blocks['doc_id'] == image_row.doc_id) &
             (df_text_blocks['page'] == image_row.page)
@@ -46,7 +46,7 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
             c2=get_centroid(second_bbox)
         )
 
-        idx = texts_candidates_df['bbox'].apply(distance_criteria).idxmin()
-        df_images.loc[image_row.Index, 'caption'] = texts_candidates_df.loc[idx, 'text']
+        idx_min = texts_candidates_df['bbox'].apply(distance_criteria).idxmin()
+        df_images.iloc[idx, df_images.columns.get_loc('caption')] = texts_candidates_df.loc[idx_min, 'text']
 
     return df_images
