@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import cv2
 from pyzbar.pyzbar import decode
@@ -47,7 +49,8 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     filtered = []
 
     for image_row in df_images.itertuples():
-        image = cv2.imread(image_row.path)
+        image_path = Path(image_row.path)
+        image = cv2.imread(str(image_path))
 
         if image is None:
             filtered.append(False)
