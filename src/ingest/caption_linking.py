@@ -31,6 +31,8 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
     Returns:
         pd.DataFrame: Images DataFrame with 'caption' column added.
     """
+
+    df_images['caption'] = None
     for idx, image_row in enumerate(df_images.itertuples()):
         texts_candidates_df = df_text_blocks[
             (df_text_blocks['doc_id'] == image_row.doc_id) &
