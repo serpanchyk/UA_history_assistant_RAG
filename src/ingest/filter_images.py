@@ -4,9 +4,7 @@ import pandas as pd
 import cv2
 from pyzbar.pyzbar import decode
 import numpy as np
-
 from src import REJECTED_IMAGES_DIR_PATH
-from src.io.filesystem import ensure_dir
 from src.io.images import move_image
 from src.logger import logger
 
@@ -49,8 +47,6 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: Filtered DataFrame containing only valid images.
     """
     keep_indices = []
-
-    ensure_dir(REJECTED_IMAGES_DIR_PATH)
 
     for idx, image_row in enumerate(df_images.itertuples()):
         image_path = Path(image_row.path)

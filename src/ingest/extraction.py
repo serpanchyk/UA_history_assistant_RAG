@@ -3,7 +3,6 @@ import pandas as pd
 
 import uuid
 
-from src.io.filesystem import ensure_dir
 from src.io.images import write_image
 from src import IMAGES_DIR_PATH, TEXTBOOKS_DIR_PATH
 from src.utils.normalize import normalize_text
@@ -83,13 +82,13 @@ def extract_data(df_docs: pd.DataFrame) -> tuple[list, list]:
     Returns:
         tuple[list, list]: List of text block dicts, list of image dicts.
     """
-    ensure_dir(IMAGES_DIR_PATH)
-
     rows_text = []
     rows_images = []
+
     for doc_row in df_docs.itertuples():
         file_path = TEXTBOOKS_DIR_PATH / doc_row.pdf_name
         logger.info(f"Opening PDF: {file_path}")
+
         if not file_path.exists():
             logger.error(f"PDF {file_path} does not exist")
             continue
@@ -104,7 +103,7 @@ def extract_data(df_docs: pd.DataFrame) -> tuple[list, list]:
                             rows_text.append(text_info)
 
                     elif block['type'] == IMAGE_BLOCK_TYPE:
-                        image_info = extract_image(block, doc_row.Index, page.number)
+                        image_info = extract_image(block, doc_row.Index, page.number, i)
                         if image_info:
                             rows_images.append(image_info)
 
