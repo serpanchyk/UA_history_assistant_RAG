@@ -29,10 +29,10 @@ class PDFIngestor:
     def __init__(self, images_dir: Path = IMAGES_DIR_PATH):
         self.images_dir: Path = images_dir
 
-    def delete_old_images(self) -> None:
+    def delete_old_images(self, force: bool = False) -> None:
         """Deletes all images in the images directory."""
         logger.info(f"Deleting old images in {self.images_dir}")
-        delete_images(self.images_dir)
+        delete_images(self.images_dir, force=force)
         logger.info("Old images deleted.")
 
     def load_textbooks(self) -> pd.DataFrame:
@@ -100,7 +100,7 @@ class PDFIngestor:
         """
         logger.info("Starting PDF ingestion pipeline.")
         try:
-            self.delete_old_images()
+            self.delete_old_images(force=True)
             textbooks_df = self.load_textbooks()
             text_blocks_df, images_df = self.extract_data_from_pdfs(textbooks_df)
 

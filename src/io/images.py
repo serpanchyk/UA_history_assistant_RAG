@@ -56,7 +56,7 @@ def move_image(image_path: Path, target_dir: Path) -> Path:
     return new_path
 
 
-def delete_images(images_path: Path) -> None:
+def delete_images(images_path: Path, force: bool = False) -> None:
     """
     Deletes all images in the specified directory.
     Args:
@@ -64,6 +64,9 @@ def delete_images(images_path: Path) -> None:
     Notes:
         If the path does not exist or is not a directory, the function does nothing.
     """
+    if not force:
+        raise ValueError("Must pass force=True to delete images")
+
     if not images_path.exists():
         logger.warning(f"Directory to delete does not exist: {images_path}")
         return
