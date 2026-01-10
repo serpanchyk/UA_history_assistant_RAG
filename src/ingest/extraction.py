@@ -103,7 +103,7 @@ def extract_data(df_docs: pd.DataFrame) -> tuple[list, list]:
                             rows_text.append(text_info)
 
                     elif block['type'] == IMAGE_BLOCK_TYPE:
-                        image_info = extract_image(block, doc_row.Index, page.number, i)
+                        image_info = extract_image(block, doc_row.Index, page.number)
                         if image_info:
                             rows_images.append(image_info)
 
