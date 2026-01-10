@@ -33,15 +33,15 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
     """
 
     df_images['caption'] = None
+    text_groups = df_text_blocks.groupby(['doc_id', 'page'])
     for idx, image_row in enumerate(df_images.itertuples()):
-        texts_candidates_df = df_text_blocks[
-            (df_text_blocks['doc_id'] == image_row.doc_id) &
-            (df_text_blocks['page'] == image_row.page)
-        ]
+        key = (image_row.doc_id, image_row.page)
 
-        if texts_candidates_df.empty:
+        if key not in text_groups.groups:
             logger.debug(f"No text found for image: {image_row.path}")
             continue
+
+        texts_candidates_df = text_groups.get_group(key)
 
         distance_criteria = lambda second_bbox: get_distance_squared(
             c1=get_centroid(image_row.bbox),
