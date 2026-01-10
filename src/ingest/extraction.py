@@ -1,6 +1,7 @@
 import pymupdf
 import pandas as pd
 
+from pathlib import Path
 import uuid
 
 from src.io.images import write_image
@@ -74,38 +75,60 @@ def extract_image(block: dict, doc_id: int, page_number: int) -> dict | None:
     return image_info
 
 
-def extract_data(df_docs: pd.DataFrame) -> tuple[list, list]:
+def extract_blocks_from_pdf(pdf_path: Path, doc_id: int) -> tuple[list[dict], list[dict]]:
     """
-    Extracts text blocks and images from all PDF documents in the DataFrame.
+    Extracts all text blocks and images from a single PDF.
+
     Args:
-        df_docs (pd.DataFrame): DataFrame with document info, must contain 'pdf_name'.
+        pdf_path (Path): Path to the PDF file.
+        doc_id (int): Document identifier.
+
     Returns:
-        tuple[list, list]: List of text block dicts, list of image dicts.
+        tuple[list[dict], list[dict]]: List of text blocks, list of image blocks.
     """
-    rows_text = []
-    rows_images = []
+
+    texts: list[dict] = []
+    images: list[dict] = []
+
+    with pymupdf.open(pdf_path) as doc:
+        for page in doc:
+            page_data = page.get_text("dict")
+            for block in page_data["blocks"]:
+                if block["type"] == TEXT_BLOCK_TYPE:
+                    text_info = extract_text_block(block, doc_id, page.number)
+                    if text_info:
+                        texts.append(text_info)
+                elif block["type"] == IMAGE_BLOCK_TYPE:
+                    image_info = extract_image(block, doc_id, page.number)
+                    if image_info:
+                        images.append(image_info)
+
+    return texts, images
+
+
+def extract_data(df_docs: pd.DataFrame) -> tuple[list[dict], list[dict]]:
+    """
+    Extracts text blocks and images from all PDFs listed in the DataFrame.
+
+    Args:
+        df_docs (pd.DataFrame): Must contain 'pdf_name'.
+
+    Returns:
+        tuple[list[dict], list[dict]]: All text blocks and images.
+    """
+    all_texts: list[dict] = []
+    all_images: list[dict] = []
 
     for doc_row in df_docs.itertuples():
-        file_path = TEXTBOOKS_DIR_PATH / doc_row.pdf_name
-        logger.info(f"Opening PDF: {file_path}")
-
-        if not file_path.exists():
-            logger.error(f"PDF {file_path} does not exist")
+        pdf_path = TEXTBOOKS_DIR_PATH / doc_row.pdf_name
+        if not pdf_path.exists():
+            logger.error(f"PDF {pdf_path} does not exist")
             continue
-        with pymupdf.open(file_path) as doc:
-            for page in doc:
-                page_data = page.get_text('dict')
-                for i, block in enumerate(page_data['blocks']):
 
-                    if block['type'] == TEXT_BLOCK_TYPE:
-                        text_info = extract_text_block(block, doc_row.Index, page.number)
-                        if text_info:
-                            rows_text.append(text_info)
+        texts, images = extract_blocks_from_pdf(pdf_path, doc_row.Index)
+        all_texts.extend(texts)
+        all_images.extend(images)
 
-                    elif block['type'] == IMAGE_BLOCK_TYPE:
-                        image_info = extract_image(block, doc_row.Index, page.number)
-                        if image_info:
-                            rows_images.append(image_info)
+    logger.info(f"Extracted {len(all_texts)} text blocks and {len(all_images)} images from corpus")
+    return all_texts, all_images
 
-    logger.info(f"Extracted {len(rows_text)} text blocks and {len(rows_images)} images")
-    return rows_text, rows_images
