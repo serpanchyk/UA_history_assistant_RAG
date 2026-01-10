@@ -2,7 +2,7 @@ import pandas as pd
 import cv2
 from pyzbar.pyzbar import decode
 import numpy as np
-from src import IMAGES_DIR_PATH, REJECTED_IMAGES_DIR_PATH
+from src import REJECTED_IMAGES_DIR_PATH
 from src.io.images import move_image
 from src.logger import logger
 
@@ -47,8 +47,7 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     filtered = []
 
     for image_row in df_images.itertuples():
-        image_path = IMAGES_DIR_PATH / image_row.path
-        image = cv2.imread(image_path)
+        image = cv2.imread(image_row.path)
 
         if image is None:
             filtered.append(False)
