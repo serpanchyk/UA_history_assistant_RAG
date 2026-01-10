@@ -44,10 +44,8 @@ class PDFIngestor:
     def extract_data_from_pdfs(self, textbooks_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Extracts text blocks and images from PDFs.
-
         Args:
             textbooks_df (pd.DataFrame): DataFrame of textbooks.
-
         Returns:
             tuple[pd.DataFrame, pd.DataFrame]: text_blocks_df, images_df
         """
@@ -60,10 +58,8 @@ class PDFIngestor:
     def filter_images_df(self, images_df: pd.DataFrame) -> pd.DataFrame:
         """
         Filters out unwanted or invalid images.
-
         Args:
             images_df (pd.DataFrame): DataFrame containing images.
-
         Returns:
             pd.DataFrame: Filtered images DataFrame.
         """
@@ -74,11 +70,9 @@ class PDFIngestor:
     def link_images_to_text(self, images_df: pd.DataFrame, text_blocks_df: pd.DataFrame) -> pd.DataFrame:
         """
         Links each image to the nearest text block.
-
         Args:
             images_df (pd.DataFrame): Images DataFrame.
             text_blocks_df (pd.DataFrame): Text blocks DataFrame.
-
         Returns:
             pd.DataFrame: Images DataFrame with 'caption' column.
         """
@@ -89,7 +83,6 @@ class PDFIngestor:
     def save_results(self, text_blocks_df: pd.DataFrame, images_df: pd.DataFrame) -> None:
         """
         Saves processed DataFrames to parquet files.
-
         Args:
             text_blocks_df (pd.DataFrame): Text blocks DataFrame.
             images_df (pd.DataFrame): Images DataFrame.
@@ -101,7 +94,6 @@ class PDFIngestor:
     def run(self, filter_images_flag: bool = True, link_images_flag: bool = True) -> None:
         """
         Runs the full ingestion pipeline.
-
         Args:
             filter_images_flag (bool): If True, filters images.
             link_images_flag (bool): If True, links images to nearest text blocks.

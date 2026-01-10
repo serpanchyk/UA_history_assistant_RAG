@@ -78,11 +78,9 @@ def extract_image(block: dict, doc_id: int, page_number: int) -> dict | None:
 def extract_blocks_from_pdf(pdf_path: Path, doc_id: int) -> tuple[list[dict], list[dict]]:
     """
     Extracts all text blocks and images from a single PDF.
-
     Args:
         pdf_path (Path): Path to the PDF file.
         doc_id (int): Document identifier.
-
     Returns:
         tuple[list[dict], list[dict]]: List of text blocks, list of image blocks.
     """
@@ -109,10 +107,8 @@ def extract_blocks_from_pdf(pdf_path: Path, doc_id: int) -> tuple[list[dict], li
 def extract_data(df_docs: pd.DataFrame) -> tuple[list[dict], list[dict]]:
     """
     Extracts text blocks and images from all PDFs listed in the DataFrame.
-
     Args:
         df_docs (pd.DataFrame): Must contain 'pdf_name'.
-
     Returns:
         tuple[list[dict], list[dict]]: All text blocks and images.
     """
