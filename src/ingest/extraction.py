@@ -3,6 +3,7 @@ import pandas as pd
 
 from pathlib import Path
 import uuid
+from tqdm import tqdm
 
 from src.io.images import write_image
 from src import IMAGES_DIR_PATH, TEXTBOOKS_DIR_PATH
@@ -115,7 +116,7 @@ def extract_data(df_docs: pd.DataFrame) -> tuple[list[dict], list[dict]]:
     all_texts: list[dict] = []
     all_images: list[dict] = []
 
-    for doc_row in df_docs.itertuples():
+    for doc_row in tqdm(df_docs. itertuples(), total=len(df_docs), desc="Processing PDFs"):
         pdf_path = TEXTBOOKS_DIR_PATH / doc_row.pdf_name
         if not pdf_path.exists():
             logger.error(f"PDF {pdf_path} does not exist")

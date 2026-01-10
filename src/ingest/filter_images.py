@@ -4,6 +4,8 @@ import pandas as pd
 import cv2
 from pyzbar.pyzbar import decode
 import numpy as np
+from tqdm import tqdm
+
 from src import REJECTED_IMAGES_DIR_PATH
 from src.io.images import move_image
 from src.logger import logger
@@ -48,7 +50,11 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     """
     keep_indices = []
 
-    for idx, image_row in enumerate(df_images.itertuples()):
+    for idx, image_row in enumerate(tqdm(
+            df_images.itertuples(),
+            total=len(df_images),
+            desc="Filtering images"
+    )):
         image_path = Path(image_row.path)
         image = cv2.imread(str(image_path))
 

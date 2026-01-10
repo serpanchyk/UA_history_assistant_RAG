@@ -1,4 +1,6 @@
 import pandas as pd
+from tqdm import tqdm
+
 from src.logger import logger
 
 def get_centroid(bbox: tuple) -> tuple:
@@ -34,7 +36,11 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
 
     df_images['caption'] = None
     text_groups = df_text_blocks.groupby(['doc_id', 'page'])
-    for idx, image_row in enumerate(df_images.itertuples()):
+    for idx, image_row in enumerate(tqdm(
+            df_images.itertuples(),
+            total=len(df_images),
+            desc="Linking captions to images"
+    )):
         key = (image_row.doc_id, image_row.page)
 
         if key not in text_groups.groups:
