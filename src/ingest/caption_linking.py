@@ -1,10 +1,11 @@
 import pandas as pd
+from pandas.core.groupby.generic import DataFrameGroupBy
 from tqdm import tqdm
 
 from src.logger import logger
 from src.utils.distance import distance_between_bboxes
 
-def get_texts_for_image(image_row: tuple, text_groups: pd.DataFrameGroupBy) -> pd.DataFrame | None:
+def get_texts_for_image(image_row: tuple, text_groups: DataFrameGroupBy) -> pd.DataFrame | None:
     """
     Retrieves all text blocks that belong to the same document and page
     as the given image.
@@ -69,7 +70,7 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
         if texts_df is None:
             continue
 
-        caption = find_closest_text(image_row, texts_df)
+        caption = find_closest_text(tuple(image_row.bbox), texts_df)
         df_images.iloc[idx, df_images.columns.get_loc('caption')] = caption
 
     return df_images
