@@ -52,6 +52,7 @@ class PDFIngestor:
         text_list, image_list = extract_data(textbooks_df)
         text_blocks_df: pd.DataFrame = pd.DataFrame(text_list)
         images_df: pd.DataFrame = pd.DataFrame(image_list)
+
         logger.info(f"Extracted {len(text_blocks_df)} text blocks and {len(images_df)} images.")
         return text_blocks_df, images_df
 
@@ -98,6 +99,7 @@ class PDFIngestor:
             filter_images_flag (bool): If True, filters images.
             link_images_flag (bool): If True, links images to nearest text blocks.
         """
+
         logger.info("Starting PDF ingestion pipeline.")
         try:
             self.delete_old_images(force=True)
