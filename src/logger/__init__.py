@@ -29,7 +29,7 @@ file_handler = TimedRotatingFileHandler(
 )
 file_handler.setFormatter(formatter)
 
-logger = logging.getLogger()
+logger = logging.getLogger("rag_pipeline")
 logger.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 
