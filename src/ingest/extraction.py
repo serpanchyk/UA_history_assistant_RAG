@@ -136,6 +136,16 @@ def extract_blocks_from_pdf(pdf_path: Path, doc_id: int) -> tuple[list[dict], li
 
     return texts, images
 
+def get_pdf_path(doc_row: tuple) -> Path | None:
+    """Takes path of pdf from dataframe row and checks whether file exists."""
+    pdf_path = TEXTBOOKS_DIR_PATH / doc_row.pdf_name
+
+    if not pdf_path.exists():
+        logger.error(f"PDF {pdf_path} does not exist")
+        return None
+
+    return pdf_path
+
 
 def extract_data(df_docs: pd.DataFrame) -> tuple[list[dict], list[dict]]:
     """
@@ -149,14 +159,12 @@ def extract_data(df_docs: pd.DataFrame) -> tuple[list[dict], list[dict]]:
     all_images: list[dict] = []
 
     for doc_row in tqdm(df_docs. itertuples(), total=len(df_docs), desc="Processing PDFs"):
-        pdf_path = TEXTBOOKS_DIR_PATH / doc_row.pdf_name
-        if not pdf_path.exists():
-            logger.error(f"PDF {pdf_path} does not exist")
+        pdf_path = get_pdf_path(doc_row)
+        if pdf_path is None:
             continue
 
         texts, images = extract_blocks_from_pdf(pdf_path, doc_row.Index)
         all_texts.extend(texts)
         all_images.extend(images)
 
-    logger.info(f"Extracted {len(all_texts)} text blocks and {len(all_images)} images from corpus")
     return all_texts, all_images
