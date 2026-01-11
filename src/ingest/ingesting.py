@@ -3,8 +3,8 @@ import pandas as pd
 from src.ingest.caption_linking import link_image_to_text
 from src.ingest.extraction import extract_data
 from src.ingest.filter_images import filter_images
-from src.io.dataframes import read_parquet, write_parquet
-from src.io.images import delete_images
+from src.fs_io.dataframes import read_parquet, write_parquet
+from src.fs_io.images import delete_images
 from src import TEXTBOOKS_DF_PATH, TEXT_BLOCKS_DF_PATH, IMAGES_DF_PATH, IMAGES_DIR_PATH
 from src.logger import logger
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import uuid
 from tqdm import tqdm
 
-from src.io.images import write_image
+from src.fs_io.images import write_image
 from src import IMAGES_DIR_PATH, TEXTBOOKS_DIR_PATH
 from src.utils.normalize import normalize_text
 from src.logger import logger

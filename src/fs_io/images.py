@@ -13,7 +13,7 @@ def read_image(path: Path) -> np.ndarray:
     Args:
         path (Path): Path to the image file.
     Returns:
-        bytes: The content of the image file.
+        np.ndarray: The content of the image file.
     Raises:
         FileNotFoundError: If the image file does not exist.
     """

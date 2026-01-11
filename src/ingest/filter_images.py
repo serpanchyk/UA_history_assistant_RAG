@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm
 
 from src import REJECTED_IMAGES_DIR_PATH
-from src.io.images import move_image, read_image
+from src.fs_io.images import move_image, read_image
 from src.logger import logger
 
 def is_qrcode(gray_image: np.ndarray) -> bool:
