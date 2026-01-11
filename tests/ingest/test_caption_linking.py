@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 
 from src.ingest.caption_linking import get_texts_for_image, find_closest_text, link_image_to_text
-from tests.fixtures.mock_classes import MocImageRow
+from tests.fixtures.mock_classes import MockImageRow
 
 class TestGetTextsForImage(unittest.TestCase):
     def test_texts_found(self):
@@ -15,7 +15,7 @@ class TestGetTextsForImage(unittest.TestCase):
 
         groups = df_texts.groupby(['doc_id', 'page'])
 
-        image_row = MocImageRow(
+        image_row = MockImageRow(
             path='img.png', bbox=[0, 0, 0, 0], doc_id=0, page=0
         )
 
@@ -34,7 +34,7 @@ class TestGetTextsForImage(unittest.TestCase):
 
         groups = df_texts.groupby(['doc_id', 'page'])
 
-        image_row = MocImageRow(
+        image_row = MockImageRow(
             path='img.png', bbox=[0, 0, 0, 0], doc_id=0, page=2
         )
 
