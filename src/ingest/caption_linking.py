@@ -61,16 +61,16 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
 
     df_images['caption'] = None
     text_groups = df_text_blocks.groupby(['doc_id', 'page'])
-    for idx, image_row in enumerate(tqdm(
+    for image_row in tqdm(
             df_images.itertuples(),
             total=len(df_images),
             desc="Linking captions to images"
-    )):
+    ):
         texts_df = get_texts_for_image(image_row, text_groups)
         if texts_df is None:
             continue
 
         caption = find_closest_text(tuple(image_row.bbox), texts_df)
-        df_images.at[idx, 'caption'] = caption
+        df_images.at[image_row.Index, 'caption'] = caption
 
     return df_images
