@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm
 
 from src import REJECTED_IMAGES_DIR_PATH
-from src.io.images import move_image
+from src.io.images import move_image, read_image
 from src.logger import logger
 
 def is_qrcode(gray_image: np.ndarray) -> bool:
@@ -20,16 +20,26 @@ def is_qrcode(gray_image: np.ndarray) -> bool:
     detected_objects = decode(inverted_image)
     return len(detected_objects) > 0
 
-def is_gradient(gray_image: np.ndarray) -> bool:
+
+def is_ui_element(gray_image: np.ndarray) -> bool:
     """Check if the grayscale image is mostly gradient/blur (not sharp)."""
+    if gray_image is None or not isinstance(gray_image, np.ndarray):
+        raise ValueError("Input must be a valid numpy ndarray.")
+
+    if len(gray_image.shape) != 2:
+        raise ValueError("Input image must be grayscale (2D array).")
+
     threshold = 100
+    h_limit, w_limit = 100, 100
+    crop_ratio = 0.1
+
     h, w = gray_image.shape
 
-    if h < 100 and w < 100:
+    if h < h_limit and w < w_limit:
         return True
 
-    margin_h = int(h * 0.1)
-    margin_w = int(w * 0.1)
+    margin_h = int(h * crop_ratio)
+    margin_w = int(w * crop_ratio)
 
     if h > 2 * margin_h and w > 2 * margin_w:
         cropped_image = gray_image[margin_h:h - margin_h, margin_w:w - margin_w]
@@ -38,6 +48,16 @@ def is_gradient(gray_image: np.ndarray) -> bool:
 
     laplacian_var = cv2.Laplacian(cropped_image, cv2.CV_64F).var()
     return laplacian_var < threshold
+
+def is_image_valid(image: np.ndarray, image_path: Path) -> bool:
+    """Checks whether image is valid: exists, not qrcode and not ui element."""
+    if image is None:
+        logger.warning(f"Image could not be read: {image_path}")
+        return False
+
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    return not (is_qrcode(gray_image) or is_ui_element(gray_image))
+
 
 def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     """
@@ -56,14 +76,9 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
             desc="Filtering images"
     )):
         image_path = Path(image_row.path)
-        image = cv2.imread(str(image_path))
+        image = read_image(image_path)
 
-        if image is None:
-            keep_image = False
-            logger.warning(f"Image could not be read: {image_path}")
-        else:
-            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            keep_image = not (is_qrcode(gray_image) or is_gradient(gray_image))
+        keep_image = is_image_valid(image, image_path)
 
         if keep_image:
             keep_indices.append(idx)

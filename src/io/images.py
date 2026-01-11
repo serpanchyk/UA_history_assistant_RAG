@@ -1,10 +1,13 @@
 import shutil
 from pathlib import Path
+import cv2
+import numpy as np
+
 from src.logger import logger
 from .filesystem import ensure_dir, ensure_parent_dir
 
 
-def read_image(path: Path) -> bytes:
+def read_image(path: Path) -> np.ndarray:
     """
     Reads an image file and returns its bytes.
     Args:
@@ -18,7 +21,7 @@ def read_image(path: Path) -> bytes:
         logger.error(f"Image not found: {path}")
         raise FileNotFoundError(f"Image not found: {path}")
 
-    return path.read_bytes()
+    return cv2.imread(str(path))
 
 
 def write_image(image_bytes: bytes, path: Path) -> None:
@@ -31,7 +34,6 @@ def write_image(image_bytes: bytes, path: Path) -> None:
     ensure_parent_dir(path)
     with open(path, 'wb') as f:
         f.write(image_bytes)
-
 
 
 def move_image(image_path: Path, target_dir: Path) -> Path:
