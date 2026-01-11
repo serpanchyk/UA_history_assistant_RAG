@@ -95,7 +95,7 @@ def process_block(block: dict, doc_id: int, page_number: int) -> tuple[dict | No
 
     elif block["type"] == IMAGE_BLOCK_TYPE:
         image_info = extract_image(block, doc_id, page_number)
-        return extract_image(image_info, doc_id, page_number), image_info
+        return None, image_info
 
     return None, None
 
