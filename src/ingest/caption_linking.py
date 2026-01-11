@@ -71,6 +71,6 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
             continue
 
         caption = find_closest_text(tuple(image_row.bbox), texts_df)
-        df_images.iloc[idx, df_images.columns.get_loc('caption')] = caption
+        df_images.at[idx, 'caption'] = caption
 
     return df_images
