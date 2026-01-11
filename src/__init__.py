@@ -1,14 +1,14 @@
-from pathlib import Path
+from src.config import settings
 
-PROJECT_PATH = Path(__file__).resolve().parent.parent
-DATA_PATH = PROJECT_PATH / "data"
+PROJECT_PATH = settings.PROJECT_ROOT
+DATA_PATH = settings.DATA_DIR
 
-DFS_PATH = DATA_PATH / "dfs"
-TEXTBOOKS_DF_PATH = DFS_PATH / "textbooks.parquet"
-IMAGES_DF_PATH = DFS_PATH / "images.parquet"
-TEXT_BLOCKS_DF_PATH = DFS_PATH / "text_blocks.parquet"
+DFS_PATH = settings.DFS_PATH
+TEXTBOOKS_DF_PATH = settings.TEXTBOOKS_DF_PATH
+IMAGES_DF_PATH = settings.IMAGES_DF_PATH
+TEXT_BLOCKS_DF_PATH = settings.TEXT_BLOCKS_DF_PATH
 
-TEXTBOOKS_DIR_PATH = DATA_PATH / "pdfs/"
+TEXTBOOKS_DIR_PATH = settings.TEXTBOOKS_DIR_PATH
 
-IMAGES_DIR_PATH = DATA_PATH / "images"
-REJECTED_IMAGES_DIR_PATH = IMAGES_DIR_PATH / "rejected_images"
+IMAGES_DIR_PATH = settings.IMAGES_DIR_PATH
+REJECTED_IMAGES_DIR_PATH = settings.REJECTED_IMAGES_DIR_PATH
