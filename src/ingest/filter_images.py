@@ -29,7 +29,7 @@ def is_ui_element(gray_image: np.ndarray) -> bool:
     if len(gray_image.shape) != 2:
         raise ValueError("Input image must be grayscale (2D array).")
 
-    threshold = 100
+    threshold = 90
     h_limit, w_limit = 100, 100
     crop_ratio = 0.1
 
@@ -49,10 +49,9 @@ def is_ui_element(gray_image: np.ndarray) -> bool:
     laplacian_var = cv2.Laplacian(cropped_image, cv2.CV_64F).var()
     return laplacian_var < threshold
 
-def is_image_valid(image: np.ndarray, image_path: Path) -> bool:
+def is_image_valid(image: np.ndarray) -> bool:
     """Checks whether image is valid: exists, not qrcode and not ui element."""
     if image is None:
-        logger.warning(f"Image could not be read: {image_path}")
         return False
 
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -78,12 +77,11 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
         image_path = Path(image_row.path)
         image = read_image(image_path)
 
-        keep_image = is_image_valid(image, image_path)
+        keep_image = is_image_valid(image)
 
         if keep_image:
             keep_indices.append(idx)
         else:
             move_image(image_path, REJECTED_IMAGES_DIR_PATH)
-
 
     return df_images.iloc[keep_indices]
