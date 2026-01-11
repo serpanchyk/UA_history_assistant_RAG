@@ -1,6 +1,6 @@
 import unittest
 
-from src.utils.normalize import normalize_text
+from src.utils.texts import normalize_text, block_to_text
 
 
 class TestNormalizeText(unittest.TestCase):
@@ -42,6 +42,32 @@ class TestNormalizeText(unittest.TestCase):
     def test_string_with_only_whitespace(self):
         self.assertEqual(normalize_text(" \n\t "), "")
 
+class BlockToTextTest(unittest.TestCase):
+    def test_happy_path(self):
+
+        block = {'lines': [{'spans': [{'text': 'Hello'}, {'text': 'World!'}]},
+                           {'spans': [{'text': 'I'}, {'text': 'like'}, {'text': 'ML!'}]},
+                           {'spans': [{'text': '42'}]}
+                           ]
+                 }
+
+        text = block_to_text(block)
+
+        self.assertEqual(text, 'Hello World! I like ML! 42')
+
+    def test_small_text(self):
+        block = {'lines': [{'spans': [{'text': 'Hello'}]}]}
+
+        self.assertIsNone(block_to_text(block))
+
+    def test_empty_block(self):
+        block = {'lines': [{'spans': [{'text': ''}, {'text': ''}, {'text': ''}]},
+                           {'spans': [{'text': ''}, {'text': ''}, {'text': ''}]},
+                           {'spans': [{'text': ''}, {'text': ''}, {'text': ''}]},
+                           {'spans': [{'text': ''}, {'text': ''}, {'text': ''}]},
+                           ]
+                 }
+        self.assertIsNone(block_to_text(block))
 
 if __name__ == "__main__":
     unittest.main()
