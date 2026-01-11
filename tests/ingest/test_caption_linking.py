@@ -21,7 +21,7 @@ class TestGetTextsForImage(unittest.TestCase):
 
         results = get_texts_for_image(image_row, groups)
 
-        self.assertEqual(results.iloc[0, results.columns.get_loc('text')], 'A')
+        self.assertEqual(results.at[0, 'text'], 'A')
         self.assertEqual(len(results), 1)
 
     def texts_not_found(self):
