@@ -7,24 +7,11 @@ from tqdm import tqdm
 
 from src.fs_io.images import write_image
 from src import IMAGES_DIR_PATH, TEXTBOOKS_DIR_PATH
-from src.utils.normalize import normalize_text
+from src.utils.texts import block_to_text
 from src.logger import logger
 
 TEXT_BLOCK_TYPE = 0
 IMAGE_BLOCK_TYPE = 1
-MIN_TEXT_LENGTH = 5
-
-def block_to_text(block: dict) -> str | None:
-    """Convert PDF text block to string, return None if too short."""
-    text = '\n'.join(
-        ' '.join(span['text'] for span in line['spans'])
-        for line in block['lines']
-    )
-
-    if len(text) < MIN_TEXT_LENGTH:
-        return None
-
-    return text
 
 def extract_text_block(block: dict, doc_id: int, page_number: int) -> dict | None:
     """
@@ -43,7 +30,7 @@ def extract_text_block(block: dict, doc_id: int, page_number: int) -> dict | Non
         return None
 
     block_info = {
-        'text': normalize_text(text),
+        'text': text,
         'bbox': list(block['bbox']),
         'page': page_number,
         'doc_id': doc_id
