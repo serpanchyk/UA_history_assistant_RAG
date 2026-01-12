@@ -24,7 +24,7 @@ def normalize_text(text: str) -> str:
     cleaned = []
     for ch in text:
         cat = unicodedata.category(ch)
-        if cat[0] == "C":
+        if cat[0] == "C" or cat == "Cf":
             cleaned.append(" ")
         elif cat[0] in ALLOWED_CATEGORIES:
             cleaned.append(ch)
