@@ -20,6 +20,10 @@ class TestNormalizeText(unittest.TestCase):
         text = "Hello\x00World\x1FTest\x7F"
         self.assertEqual(normalize_text(text), "Hello World Test")
 
+    def test_remove_annoying_symbols(self):
+        text = " Hello ­ World"
+        self.assertEqual(normalize_text(text), "Hello World")
+
     def test_non_breaking_space_replaced(self):
         text = "Hello\u00A0World"
         self.assertEqual(normalize_text(text), "Hello World")
