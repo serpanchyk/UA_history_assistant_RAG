@@ -5,7 +5,8 @@ from pathlib import Path
 from unittest.mock import ANY
 
 from src.ingest.ingesting import PDFIngestor
-from src import TEXTBOOKS_DF_PATH, TEXT_BLOCKS_DF_PATH, IMAGES_DF_PATH
+from src import TEXTBOOKS_DF_PATH, TEXT_BLOCKS_DF_PATH, IMAGES_DF_PATH, CHUNKS_DF_PATH
+
 
 class TestPDFIngestor(unittest.TestCase):
     def setUp(self):
@@ -54,21 +55,35 @@ class TestPDFIngestor(unittest.TestCase):
         self.assertIn("caption", linked.columns)
         self.assertEqual(linked.iloc[0]["caption"], "Hello")
 
+    @patch("src.ingest.ingesting.chunking")
+    def test_chunking_df(self, mock_chunk):
+        texts_df = pd.DataFrame([{"text": "Hello"}, {"text": "World"}])
+        mock_chunk.return_value = [{"text": "Hello World"}]
+        linked = self.ingestor.chunking_df(texts_df)
+        self.assertEqual(linked.iloc[0]["text"], "Hello World")
+
     @patch("src.ingest.ingesting.write_parquet")
     def test_save_results_calls_write_parquet(self, mock_write):
         texts_df = pd.DataFrame({"text": ["t"]})
         images_df = pd.DataFrame({"path": ["/img.png"]})
-        self.ingestor.save_results(texts_df, images_df)
+        chunks_df = pd.DataFrame({"text": ["t"]})
+        self.ingestor.save_results(texts_df, images_df, chunks_df)
         mock_write.assert_any_call(ANY, TEXT_BLOCKS_DF_PATH)
         mock_write.assert_any_call(ANY, IMAGES_DF_PATH)
+        mock_write.assert_any_call(ANY, CHUNKS_DF_PATH)
 
     @patch("src.ingest.ingesting.PDFIngestor.delete_old_images")
     @patch("src.ingest.ingesting.PDFIngestor.load_textbooks")
     @patch("src.ingest.ingesting.PDFIngestor.extract_data_from_pdfs")
     @patch("src.ingest.ingesting.PDFIngestor.filter_images_df")
     @patch("src.ingest.ingesting.PDFIngestor.link_images_to_text")
+    @patch("src.ingest.ingesting.PDFIngestor.chunking_df")
     @patch("src.ingest.ingesting.PDFIngestor.save_results")
-    def test_run_pipeline_all_steps(self, mock_save, mock_link, mock_filter, mock_extract, mock_load, mock_delete):
+    def test_run_pipeline_all_steps(
+            self, mock_save, mock_chunk,
+            mock_link, mock_filter, mock_extract,
+            mock_load, mock_delete
+    ):
         mock_load.return_value = pd.DataFrame({"pdf_name": ["a.pdf"]})
         mock_extract.return_value = (
             pd.DataFrame({"text": ["t"]}).to_dict("records"),
@@ -76,6 +91,7 @@ class TestPDFIngestor(unittest.TestCase):
         )
         mock_filter.return_value = pd.DataFrame({"path": ["/img.png"]})
         mock_link.return_value = pd.DataFrame({"path": ["/img.png"], "caption": ["t"]})
+        mock_chunk.return_value = pd.DataFrame({"text": ["t"]})
 
         self.ingestor.run(filter_images_flag=True, link_images_flag=True)
 
@@ -84,6 +100,7 @@ class TestPDFIngestor(unittest.TestCase):
         mock_extract.assert_called_once()
         mock_filter.assert_called_once()
         mock_link.assert_called_once()
+        mock_chunk.assert_called_once()
         mock_save.assert_called_once()
 
 
