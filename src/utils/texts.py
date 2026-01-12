@@ -19,7 +19,8 @@ def normalize_text(text: str) -> str:
     text = text.replace("\u00ad", "")
 
     # Fix hyphenated line breaks
-    text = re.sub(r"-\s*\n\s*", "", text)
+    text = re.sub(r"(?<=\w)-\s*\n\s*(?=\w)", "", text)
+    text = re.sub(r"(?<=\w)-\s+(?=\w)", "", text)
 
     cleaned = []
     for ch in text:
@@ -40,11 +41,10 @@ def normalize_text(text: str) -> str:
 
 def block_to_text(block: dict) -> str | None:
     """Convert PDF text block to string, return None if too short."""
-    text = ' '.join(
-        span['text']
-        for line in block['lines']
-        for span in line['spans']
-    )
+    text = '\n'.join(
+        ' '.join(span['text']
+        for span in line['spans'])
+        for line in block['lines'])
 
     normalized = normalize_text(text)
 
