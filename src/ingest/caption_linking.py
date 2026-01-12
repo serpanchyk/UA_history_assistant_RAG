@@ -3,7 +3,7 @@ from pandas.core.groupby.generic import DataFrameGroupBy
 from tqdm import tqdm
 
 from src.logger import logger
-from src.utils.distance import distance_between_bboxes
+from src.utils.spatial_calculations import distance_between_bboxes
 
 def get_texts_for_image(image_row: tuple, text_groups: DataFrameGroupBy) -> pd.DataFrame | None:
     """
