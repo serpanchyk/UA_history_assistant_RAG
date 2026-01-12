@@ -46,18 +46,22 @@ class TestNormalizeText(unittest.TestCase):
     def test_string_with_only_whitespace(self):
         self.assertEqual(normalize_text(" \n\t "), "")
 
+    def test_remove_hyphenation(self):
+        text = "He-\nllo World"
+        self.assertEqual(normalize_text(text), "Hello World")
+
 class BlockToTextTest(unittest.TestCase):
     def test_happy_path(self):
 
         block = {'lines': [{'spans': [{'text': 'Hello'}, {'text': 'World!'}]},
                            {'spans': [{'text': 'I'}, {'text': 'like'}, {'text': 'ML!'}]},
-                           {'spans': [{'text': '42'}]}
-                           ]
+                           {'spans': [{'text': 'Unchara-'}]},
+                           {'spans': [{'text': 'cteristically'}]}]
                  }
 
         text = block_to_text(block)
 
-        self.assertEqual(text, 'Hello World! I like ML! 42')
+        self.assertEqual(text, 'Hello World! I like ML! Uncharacteristically')
 
     def test_small_text(self):
         block = {'lines': [{'spans': [{'text': 'Hello'}]}]}
