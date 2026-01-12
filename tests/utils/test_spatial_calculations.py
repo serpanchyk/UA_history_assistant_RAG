@@ -1,6 +1,6 @@
 import unittest
 
-from src.utils.distance import get_centroid, get_distance_squared, distance_between_bboxes
+from src.utils.spatial_calculations import get_centroid, get_distance_squared, distance_between_bboxes
 
 
 class TestGetCentroid(unittest.TestCase):
