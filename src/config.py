@@ -48,5 +48,9 @@ class Settings(BaseSettings):
     def TEXT_BLOCKS_DF_PATH(self) -> Path:
         return self.DFS_PATH / "text_blocks.parquet"
 
+    @property
+    def CHUNKS_DF_PATH(self) -> Path:
+        return self.DFS_PATH / "chunks.parquet"
+
 
 settings = Settings()

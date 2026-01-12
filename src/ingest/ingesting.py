@@ -1,11 +1,12 @@
 from pathlib import Path
 import pandas as pd
 from src.ingest.caption_linking import link_image_to_text
+from src.ingest.chunking import chunking
 from src.ingest.extraction import extract_data
 from src.ingest.filter_images import filter_images
 from src.fs_io.dataframes import read_parquet, write_parquet
 from src.fs_io.images import delete_images
-from src import TEXTBOOKS_DF_PATH, TEXT_BLOCKS_DF_PATH, IMAGES_DF_PATH, IMAGES_DIR_PATH
+from src import TEXTBOOKS_DF_PATH, TEXT_BLOCKS_DF_PATH, IMAGES_DF_PATH, IMAGES_DIR_PATH, CHUNKS_DF_PATH
 from src.logger import logger
 
 
@@ -81,7 +82,25 @@ class PDFIngestor:
         logger.info("Linked images to text blocks.")
         return linked_df
 
-    def save_results(self, text_blocks_df: pd.DataFrame, images_df: pd.DataFrame) -> None:
+    def chunking_df(self, text_blocks_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Aggreates text blocks to bigger chunks.
+        Args:
+            text_blocks_df (pd.DataFrame): Text blocks DataFrame.
+        Returns:
+            pd.DataFrame: Chunks DataFrame.
+        """
+        chunks: list[dict] = chunking(text_blocks_df)
+        chunks_df: pd.DataFrame = pd.DataFrame(chunks)
+        logger.info("Converted text blocks to chunks.")
+        return chunks_df
+
+    def save_results(
+            self,
+            text_blocks_df: pd.DataFrame,
+            images_df: pd.DataFrame,
+            chunks_df: pd.DataFrame
+    ) -> None:
         """
         Saves processed DataFrames to parquet files.
         Args:
@@ -90,9 +109,18 @@ class PDFIngestor:
         """
         write_parquet(text_blocks_df, TEXT_BLOCKS_DF_PATH)
         write_parquet(images_df, IMAGES_DF_PATH)
-        logger.info(f"Saved text blocks to {TEXT_BLOCKS_DF_PATH} and images to {IMAGES_DF_PATH}")
+        write_parquet(chunks_df, CHUNKS_DF_PATH)
+        logger.info(
+            f"Saved text blocks to {TEXT_BLOCKS_DF_PATH}, "
+            f"images to {IMAGES_DF_PATH} "
+            f"and chunks to {CHUNKS_DF_PATH}."
+        )
 
-    def run(self, filter_images_flag: bool = True, link_images_flag: bool = True) -> None:
+    def run(
+            self,
+            filter_images_flag: bool = True,
+            link_images_flag: bool = True,
+    ) -> None:
         """
         Runs the full ingestion pipeline.
         Args:
@@ -112,7 +140,9 @@ class PDFIngestor:
             if link_images_flag:
                 images_df = self.link_images_to_text(images_df, text_blocks_df)
 
-            self.save_results(text_blocks_df, images_df)
+            chunks_df = self.chunking_df(text_blocks_df)
+
+            self.save_results(text_blocks_df, images_df, chunks_df)
             logger.info("PDF ingestion pipeline finished successfully.")
         except Exception as err:
             logger.error(f"Pipeline failed: {err}")
