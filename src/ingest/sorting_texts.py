@@ -39,6 +39,6 @@ def sort_texts(texts_df: pd.DataFrame) -> pd.Series:
     return (
         texts_df
         .groupby(['doc_id', 'page'], group_keys=False)
-        .apply(bbox_sort)
+        .apply(bbox_sort, include_groups=True)
         .reset_index(drop=True)
     )
