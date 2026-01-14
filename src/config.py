@@ -1,4 +1,7 @@
+from functools import cached_property
 from pathlib import Path
+
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,35 +23,43 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-    @property
+    @computed_field
+    @cached_property
     def DFS_PATH(self) -> Path:
         return self.DATA_DIR / "dfs"
 
-    @property
+    @computed_field
+    @cached_property
     def IMAGES_DIR_PATH(self) -> Path:
         return self.DATA_DIR / "images"
 
-    @property
+    @computed_field
+    @cached_property
     def TEXTBOOKS_DIR_PATH(self) -> Path:
         return self.DATA_DIR / "pdfs"
 
-    @property
+    @computed_field
+    @cached_property
     def REJECTED_IMAGES_DIR_PATH(self) -> Path:
         return self.IMAGES_DIR_PATH / "rejected_images"
 
-    @property
+    @computed_field
+    @cached_property
     def TEXTBOOKS_DF_PATH(self) -> Path:
         return self.DFS_PATH / "textbooks.parquet"
 
-    @property
+    @computed_field
+    @cached_property
     def IMAGES_DF_PATH(self) -> Path:
         return self.DFS_PATH / "images.parquet"
 
-    @property
+    @computed_field
+    @cached_property
     def TEXT_BLOCKS_DF_PATH(self) -> Path:
         return self.DFS_PATH / "text_blocks.parquet"
 
-    @property
+    @computed_field
+    @cached_property
     def CHUNKS_DF_PATH(self) -> Path:
         return self.DFS_PATH / "chunks.parquet"
 
