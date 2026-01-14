@@ -3,7 +3,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from src.logger import logger
+from src import logger
 from .filesystem import ensure_dir, ensure_parent_dir
 
 
@@ -23,6 +23,18 @@ def read_image(path: Path) -> np.ndarray:
 
     return cv2.imread(str(path))
 
+def cv2_array_to_PIL(image_array: np.ndarray):
+    """
+    Converts a CV2 image array (BGR) to a PIL Image (RGB).
+    Args:
+        image_array (np.ndarray): CV2 image array in BGR format.
+    Returns:
+        PIL.Image.Image: Converted PIL Image in RGB format.
+    """
+    from PIL import Image
+    # Convert BGR to RGB
+    rgb_array = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(rgb_array)
 
 def write_image(image_bytes: bytes, path: Path) -> None:
     """
