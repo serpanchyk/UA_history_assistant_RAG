@@ -7,6 +7,7 @@ from src.ingest.filter_images import filter_images
 from src.fs_io.dataframes import read_parquet, write_parquet
 from src.fs_io.images import delete_images
 from src import TEXTBOOKS_DF_PATH, TEXT_BLOCKS_DF_PATH, IMAGES_DF_PATH, IMAGES_DIR_PATH, CHUNKS_DF_PATH
+from src.ingest.sorting_texts import sort_texts
 from src.logger import logger
 
 
@@ -82,6 +83,18 @@ class PDFIngestor:
         logger.info("Linked images to text blocks.")
         return linked_df
 
+    def sort_texts_df(self, text_blocks_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Sorts text blocks in natural reading order.
+        Args:
+            text_blocks_df (pd.DataFrame): Text blocks DataFrame.
+        Returns:
+            pd.DataFrame: Sorted text blocks DataFrame.
+        """
+        sort_texts(text_blocks_df)
+        logger.info("Sorted text blocks.")
+        return text_blocks_df
+
     def chunking_df(self, text_blocks_df: pd.DataFrame) -> pd.DataFrame:
         """
         Aggreates text blocks to bigger chunks.
@@ -120,6 +133,7 @@ class PDFIngestor:
             self,
             filter_images_flag: bool = True,
             link_images_flag: bool = True,
+            sort_texts_flag: bool = True
     ) -> None:
         """
         Runs the full ingestion pipeline.
@@ -139,6 +153,8 @@ class PDFIngestor:
 
             if link_images_flag:
                 images_df = self.link_images_to_text(images_df, text_blocks_df)
+            if sort_texts_flag:
+                text_blocks_df = self.sort_texts_df(text_blocks_df)
 
             chunks_df = self.chunking_df(text_blocks_df)
 

@@ -78,11 +78,12 @@ class TestPDFIngestor(unittest.TestCase):
     @patch("src.ingest.ingesting.PDFIngestor.filter_images_df")
     @patch("src.ingest.ingesting.PDFIngestor.link_images_to_text")
     @patch("src.ingest.ingesting.PDFIngestor.chunking_df")
+    @patch("src.ingest.ingesting.PDFIngestor.sort_texts_df")
     @patch("src.ingest.ingesting.PDFIngestor.save_results")
     def test_run_pipeline_all_steps(
-            self, mock_save, mock_chunk,
-            mock_link, mock_filter, mock_extract,
-            mock_load, mock_delete
+            self, mock_save,  mock_sort,
+            mock_chunk, mock_link, mock_filter,
+            mock_extract, mock_load, mock_delete
     ):
         mock_load.return_value = pd.DataFrame({"pdf_name": ["a.pdf"]})
         mock_extract.return_value = (
@@ -92,6 +93,7 @@ class TestPDFIngestor(unittest.TestCase):
         mock_filter.return_value = pd.DataFrame({"path": ["/img.png"]})
         mock_link.return_value = pd.DataFrame({"path": ["/img.png"], "caption": ["t"]})
         mock_chunk.return_value = pd.DataFrame({"text": ["t"]})
+        mock_sort.return_value = pd.DataFrame({"text": ["t"]})
 
         self.ingestor.run(filter_images_flag=True, link_images_flag=True)
 
