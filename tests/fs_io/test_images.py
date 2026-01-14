@@ -5,7 +5,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from src.fs_io.images import write_image, move_image, read_image, delete_images
+from src.fs_io.images import write_image, move_image, read_image, delete_images, cv2_array_to_PIL
 
 
 class TestImagesUtils(unittest.TestCase):
@@ -50,7 +50,6 @@ class TestConvertCV2ToPIL(unittest.TestCase):
     @patch("src.fs_io.images.cv2.cvtColor")
     @patch("src.fs_io.images.Image.fromarray")
     def test_cv2_array_to_PIL(self, mock_fromarray, mock_cvtColor):
-        from src import cv2_array_to_PIL
         fake_array = np.zeros((10, 10, 3), dtype=np.uint8)
         rgb_array = np.ones((10, 10, 3), dtype=np.uint8)
         mock_cvtColor.return_value = rgb_array

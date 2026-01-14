@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 import cv2
 import numpy as np
+from PIL import Image
 
 from src import logger
 from .filesystem import ensure_dir, ensure_parent_dir
@@ -31,7 +32,6 @@ def cv2_array_to_PIL(image_array: np.ndarray):
     Returns:
         PIL.Image.Image: Converted PIL Image in RGB format.
     """
-    from PIL import Image
     # Convert BGR to RGB
     rgb_array = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
     return Image.fromarray(rgb_array)
