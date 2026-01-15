@@ -4,7 +4,6 @@ import torch
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
 
-from notebooks.filter_images import images_path
 from src.logger import logger
 from src.fs_io.images import read_image, cv2_array_to_PIL
 
@@ -30,6 +29,7 @@ class EmbeddingService:
 
         self.DENSE_DIM = self.text_model.model.model.config.hidden_size #1024
         self.VOCAB_SIZE = self.text_model.tokenizer.vocab_size # 250002
+        self.CLIP_DIM = self.clip_model.get_sentence_embedding_dimension() #512
 
         logger.info("Models loaded successfully.")
 
