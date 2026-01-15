@@ -1,7 +1,8 @@
 from pathlib import Path
 from FlagEmbedding import BGEM3FlagModel
 import torch
-from PIL import Image
+from sklearn.preprocessing import normalize
+from scipy.sparse import csr_matrix
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
 import numpy as np
@@ -28,6 +29,9 @@ class EmbeddingService:
             device=self.device
         )
 
+        self.DENSE_DIM = self.text_model.model.model.config.hidden_size #1024
+        self.VOCAB_SIZE = self.text_model.tokenizer.vocab_size # 250002
+
         logger.info("Models loaded successfully.")
 
     def embed_text_dense_vector(self, text: str) -> List[float]:
@@ -52,19 +56,20 @@ class EmbeddingService:
 
         embedding = list(
             map(lambda x: normalize(x, norm='l2'),
-                map(dict_to_csr, output["lexical_weights"])
+                map(self.dict_to_csr, output["lexical_weights"])
                 )
         )
         return embedding
 
 
-    def dict_to_csr(sparse_dict: dict) -> csr_matrix:
+    def dict_to_csr(self, sparse_dict: dict) -> csr_matrix:
+        """Converts a sparse dict to a csr_matrix with size of one row"""
         length = len(sparse_dict)
         data = list(sparse_dict.values())
         cols = list(sparse_dict.keys())
         rows = np.zeros(length)
 
-        return csr_matrix((data, (rows, cols)), shape=(1, VOCAB_SIZE), dtype=float)
+        return csr_matrix((data, (rows, cols)), shape=(1, self.VOCAB_SIZE), dtype=float)
 
     def embed_image(self, image_input: Path) -> List[float]:
         """Generates vector for image (512 dim). input is Path."""
