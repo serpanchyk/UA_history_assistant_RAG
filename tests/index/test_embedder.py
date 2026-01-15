@@ -1,13 +1,10 @@
 import unittest
 import numpy as np
-from unittest.mock import MagicMock, patch
+from unittest.mock import  patch
 from pathlib import Path
 
-# Import the class to be tested
-# CHANGE 'src.index.embedder' to your actual filename
+
 from src.index.embedder import EmbeddingService
-
-
 
 class TestEmbeddingService(unittest.TestCase):
 
@@ -53,7 +50,6 @@ class TestEmbeddingService(unittest.TestCase):
 
     def test_embed_text_structure(self):
         """Test dense/sparse return types and sparse key conversion."""
-        # Mock Output: BGE often returns string keys for tokens
         mock_output = {
             "dense_vecs": np.random.rand(1024),
             "lexical_weights": [{"101": 0.5, "202": 0.3}]
@@ -77,7 +73,6 @@ class TestEmbeddingService(unittest.TestCase):
 
         vector = self.service.embed_image(path)
 
-        # Assertions
         self.assertIsInstance(vector, list)
         self.assertEqual(len(vector), 512)
         self.mock_read_img.assert_called_once_with(path)
@@ -85,7 +80,6 @@ class TestEmbeddingService(unittest.TestCase):
 
     def test_embed_hybrid(self):
         """Test hybrid wrapper calls both underlying methods."""
-        # Setup mocks
         self.mock_bge_inst.encode.return_value = {
             "dense_vecs": np.zeros(1024),
             "lexical_weights": [{"1": 0.1}]
@@ -102,7 +96,6 @@ class TestEmbeddingService(unittest.TestCase):
 
     def test_sparse_vector_edge_case_single_dict(self):
         """Test edge case where lexical_weights is a dict, not a list of dicts."""
-        # Sometimes libraries return a single dict for single inputs
         mock_output = {
             "dense_vecs": np.random.rand(1024),
             "lexical_weights": {"505": 0.9}
