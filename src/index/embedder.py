@@ -1,13 +1,10 @@
 from pathlib import Path
 from FlagEmbedding import BGEM3FlagModel
 import torch
-from sklearn.preprocessing import normalize
-from scipy.sparse import csr_matrix
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
-import numpy as np
 
-from src import logger
+from src.logger import logger
 from src.fs_io.images import read_image, cv2_array_to_PIL
 
 
@@ -21,6 +18,7 @@ class EmbeddingService:
             'BAAI/bge-m3',
             device=self.device,
             use_fp16=True,
+            max_tokens= 1024,
         )
 
         # 2. Image Model (Multilingual CLIP)
@@ -34,42 +32,29 @@ class EmbeddingService:
 
         logger.info("Models loaded successfully.")
 
-    def embed_text_dense_vector(self, text: str) -> List[float]:
-        """Generates dense vector for text (1024 dim)."""
-        # BGE-M3 returns a numpy array, convert to list for Qdrant
-        output = self.text_model.encode(
+
+    def _sparse_vector_to_qdrant(self, model_output: dict):
+        """Extracts sparse weights and ensures format {int: float}."""
+        raw_weights = model_output["lexical_weights"][0] \
+            if isinstance(model_output["lexical_weights"], list) \
+            else model_output["lexical_weights"]
+
+        return {int(k): float(v) for k, v in raw_weights.items()}
+
+    def embed_text(self, text: str):
+        """Generates 2 vecs for text: dense and sparse embeddings"""
+        bge_output = self.text_model.encode(
             text,
             convert_to_tensor=False,
             return_dense=True,
             return_sparse=True,
         )
-        return output["dense_vecs"].tolist()
 
-    def embed_text_sparse_vector(self, text: str) -> List[float]:
-        """Generates sparse vector for text (up to 1 million dim)."""
-        output = self.text_model.encode(
-            text,
-            convert_to_tensor=False,
-            return_dense=False,
-            return_sparse=True,
-        )
+        dense_vec = bge_output["dense_vecs"].tolist()
 
-        embedding = list(
-            map(lambda x: normalize(x, norm='l2'),
-                map(self.dict_to_csr, output["lexical_weights"])
-                )
-        )
-        return embedding
+        sparse_vec = self._sparse_vector_to_qdrant(bge_output)
 
-
-    def dict_to_csr(self, sparse_dict: dict) -> csr_matrix:
-        """Converts a sparse dict to a csr_matrix with size of one row"""
-        length = len(sparse_dict)
-        data = list(sparse_dict.values())
-        cols = list(sparse_dict.keys())
-        rows = np.zeros(length)
-
-        return csr_matrix((data, (rows, cols)), shape=(1, self.VOCAB_SIZE), dtype=float)
+        return dense_vec, sparse_vec
 
     def embed_image(self, image_input: Path) -> List[float]:
         """Generates vector for image (512 dim). input is Path."""
@@ -79,14 +64,15 @@ class EmbeddingService:
 
         return embedding.tolist()
 
-    def embed_hybrid(self, text: str) -> Dict[str, List[float]]:
-        """
-        Creates TWO vectors for the same text (Caption).
-        1. Semantic meaning (BGE-M3)
-        2. Visual description meaning (CLIP Text Encoder)
-        """
+
+
+    def embed_hybrid(self, text: str, image: Path) -> Dict[str, List[float]]:
+        """Creates vectors for a multimodal entry (Caption + Image)."""
+        dense_vec, sparse_vec = self.embed_text(text)
+        image_vec = self.embed_image(image)
+
         return {
-            "caption_dense_vector": self.embed_text_dense_vector(text),
-            "caption_sparse_vector": self.embed_text_sparse_vector(text),
-            "image_vector": self.clip_model.encode(text).tolist()
+            "caption_dense_vector": dense_vec,
+            "caption_sparse_vector": sparse_vec,
+            "image_vector": image_vec
         }
