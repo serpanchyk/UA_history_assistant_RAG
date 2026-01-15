@@ -6,7 +6,24 @@ def chunking(
     text_blocks_df: pd.DataFrame,
     max_chunk_size: int = MAX_CHUNK_SIZE,
 ) -> list[dict]:
+    """
+    Split text blocks into size-limited chunks grouped by document.
 
+    Text blocks are grouped by `doc_id` and concatenated in order until the
+    accumulated character length exceeds `max_chunk_size`. Chunk boundaries
+    are created greedily. Each chunk contains its text, source page numbers,
+    and document ID.
+    Args:
+    text_blocks_df : pd.DataFrame
+        DataFrame with columns: `doc_id`, `text`, `page`.
+        Rows must be pre-sorted in reading order within each document.
+    max_chunk_size : int
+        Maximum chunk size measured in characters.
+
+    Returns:
+    list[dict]
+        Chunks with keys: `text`, `pages`, `doc_id`.
+    """
     result: list[dict] = []
 
     for doc_id, group in text_blocks_df.groupby("doc_id"):
