@@ -4,6 +4,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
 
+from notebooks.filter_images import images_path
 from src.logger import logger
 from src.fs_io.images import read_image, cv2_array_to_PIL
 
@@ -39,7 +40,12 @@ class EmbeddingService:
             if isinstance(model_output["lexical_weights"], list) \
             else model_output["lexical_weights"]
 
-        return {int(k): float(v) for k, v in raw_weights.items()}
+        sorted_items = sorted(raw_weights.items(), key=lambda item: int(item[0]))
+
+        return {
+            'indices': list(map(int, sorted_items.keys())),
+            'values': list(map(float, sorted_items.values()))
+        }
 
     def embed_text(self, text: str):
         """Generates 2 vecs for text: dense and sparse embeddings"""
@@ -54,21 +60,29 @@ class EmbeddingService:
 
         sparse_vec = self._sparse_vector_to_qdrant(bge_output)
 
-        return dense_vec, sparse_vec
+        return {
+            "text_dense_vector": dense_vec,
+            "text_sparse_vector": sparse_vec,
+        }
 
-    def embed_image(self, image_input: Path) -> List[float]:
-        """Generates vector for image (512 dim). input is Path."""
-        image_input = cv2_array_to_PIL(read_image(image_input))
+    def embed_image(self, query: Path | str) -> List[float]:
+        """Generates vector (512 dim) for image if Path were given or for text if str were given."""
+        if isinstance(query, Path):
+            image_input = cv2_array_to_PIL(read_image(query))
+        elif isinstance(query, str):
+            image_input = query
+        else:
+            raise ValueError("Query must be a Path or str representing an image or text.")
 
         embedding = self.clip_model.encode(image_input, convert_to_tensor=False)
 
         return embedding.tolist()
 
-
-
     def embed_hybrid(self, text: str, image: Path) -> Dict[str, List[float]]:
         """Creates vectors for a multimodal entry (Caption + Image)."""
-        dense_vec, sparse_vec = self.embed_text(text)
+        text_output = self.embed_text(text)
+        dense_vec, sparse_vec =  text_output["text_dense_vector"], text_output["text_sparse_vector"]
+
         image_vec = self.embed_image(image)
 
         return {

@@ -3,7 +3,6 @@ import numpy as np
 from unittest.mock import  patch
 from pathlib import Path
 
-
 from src.index.embedder import EmbeddingService
 
 class TestEmbeddingService(unittest.TestCase):
@@ -56,15 +55,16 @@ class TestEmbeddingService(unittest.TestCase):
         }
         self.mock_bge_inst.encode.return_value = mock_output
 
-        dense, sparse = self.service.embed_text("Test Query")
+        output = self.service.embed_text("Test Query")
+        dense = output["text_dense_vector"]
+        sparse = output["text_sparse_vector"]
 
         self.assertIsInstance(dense, list)
         self.assertEqual(len(dense), 1024)
 
         self.assertIsInstance(sparse, dict)
-        first_key = next(iter(sparse.keys()))
-        self.assertIsInstance(first_key, int)
-        self.assertEqual(sparse[101], 0.5)
+        self.assertEqual(sparse['indices'], [101, 202])
+        self.assertEqual(sparse['values'], [0.5, 0.3])
 
     def test_embed_image(self):
         """Test image embedding pipeline."""
@@ -102,9 +102,10 @@ class TestEmbeddingService(unittest.TestCase):
         }
         self.mock_bge_inst.encode.return_value = mock_output
 
-        _, sparse = self.service.embed_text("Test")
+        sparse =  self.service.embed_text("Test")['text_sparse_vector']
 
-        self.assertEqual(sparse[505], 0.9)
+        self.assertEqual(sparse['indices'][0], 505)
+        self.assertEqual(sparse['values'][0], 0.9)
 
 
 if __name__ == '__main__':
