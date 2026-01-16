@@ -1,3 +1,4 @@
+from typing import Callable, Iterable, Any
 import pandas as pd
 from langchain_core.vectorstores import VectorStore
 from qdrant_client import QdrantClient, models
@@ -69,48 +70,57 @@ class QdrantVectorStore(VectorStore):
         )
 
 
-    def add_image_entry(self, images_df: pd.DataFrame):
+    def _process_and_upload(self, collection_name: str, items: Iterable[Any], processor: Callable):
+        """
+        Generic helper to loop through items, process them into embeddings/metadata,
+        and upload to Qdrant.
+        """
         points = []
 
-        for image in images_df.itertuples(index=False):
-            caption = image.caption
-            image_path = image.path
+        for item in items:
+            embeddings, metadata = processor(item)
 
-            embeddings = self.embedding_service.embed_hybrid(
-                text=caption,
-                image=image_path
-            )
-
-            metadata = {
-                "caption": caption,
-                "path": str(image_path),
-                "doc_id": image.doc_id,
-                "page": image.page,
-            }
             point = self.get_point(embeddings, metadata)
             points.append(point)
 
-        self.client.upsert(
+        self.client.upload_points(
+            collection_name=collection_name,
+            points=points,
+            batch_size=64,
+            wait=True
+        )
+
+    def add_image_entry(self, images_df: pd.DataFrame):
+        def image_processor(row):
+            return (
+                self.embedding_service.embed_hybrid(text=row.caption, image=row.path),
+                {
+                    "caption": row.caption,
+                    "path": str(row.path),
+                    "doc_id": row.doc_id,
+                    "page": row.page,
+                }
+            )
+
+        self._process_and_upload(
             collection_name=self.IMAGE_COLLECTION,
-            points=points
+            items=images_df.itertuples(index=False),
+            processor=image_processor
         )
 
     def add_text_entry(self, text_chunks: list[dict]):
-        points = []
+        def text_processor(chunk):
+            return (
+                self.embedding_service.embed_text(chunk["text"]),
+                {
+                    "text": chunk["text"],
+                    "pages": chunk["pages"],
+                    "doc_id": chunk["doc_id"],
+                }
+            )
 
-        for chunk in text_chunks:
-            text = chunk["text"]
-            embeddings = self.embedding_service.embed_text(text)
-
-            metadata = {
-                "text": text,
-                "pages": chunk["pages"],
-                "doc_id": chunk["doc_id"],
-            }
-            point = self.get_point(embeddings, metadata)
-            points.append(point)
-
-        self.client.upsert(
+        self._process_and_upload(
             collection_name=self.TEXT_COLLECTION,
-            points=points
+            items=text_chunks,
+            processor=text_processor
         )
