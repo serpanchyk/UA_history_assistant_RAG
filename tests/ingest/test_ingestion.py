@@ -1,0 +1,123 @@
+"""End-to-end ingestion orchestration tests covering loading, extraction, filtering, linking, chunking and persistence."""
+
+import unittest
+from unittest.mock import patch, MagicMock
+import pandas as pd
+from pathlib import Path
+from unittest.mock import ANY
+
+from src.ingest.ingesting import PDFIngestor
+from src import TEXTBOOKS_DF_PATH, TEXT_BLOCKS_DF_PATH, IMAGES_DF_PATH, CHUNKS_DF_PATH
+
+
+class TestPDFIngestor(unittest.TestCase):
+    """End-to-end checks for the ingestion orchestration: loading, extracting, filtering, linking, chunking and saving."""
+
+    def setUp(self):
+        """Create a PDFIngestor instance configured with a fake images directory for tests."""
+        self.ingestor = PDFIngestor(images_dir=Path("/fake/images"))
+
+    @patch("src.ingest.ingesting.delete_images")
+    def test_delete_old_images_calls_delete(self, mock_delete):
+        """delete_old_images should call the delete_images helper with the configured images dir."""
+        self.ingestor.delete_old_images(force=True)
+        mock_delete.assert_called_once_with(Path("/fake/images"), force=True)
+
+    @patch("src.ingest.ingesting.read_parquet")
+    def test_load_textbooks_returns_dataframe(self, mock_read):
+        """load_textbooks should return a DataFrame read from the configured textbooks path."""
+        mock_read.return_value = pd.DataFrame({"pdf_name": ["a.pdf", "b.pdf"]})
+        df = self.ingestor.load_textbooks()
+        self.assertEqual(len(df), 2)
+        mock_read.assert_called_once_with(TEXTBOOKS_DF_PATH)
+
+    @patch("src.ingest.ingesting.extract_data")
+    def test_extract_data_from_pdfs_returns_dataframes(self, mock_extract):
+        """extract_data_from_pdfs should convert extracted records into DataFrames for texts and images."""
+        mock_extract.return_value = (
+            [{"text": "t1"}, {"text": "t2"}],
+            [{"path": "/img1.png"}, {"path": "/img2.png"}]
+        )
+        textbooks_df = pd.DataFrame({"pdf_name": ["a.pdf"]})
+        texts_df, images_df = self.ingestor.extract_data_from_pdfs(textbooks_df)
+
+        self.assertEqual(len(texts_df), 2)
+        self.assertEqual(texts_df.iloc[0]["text"], "t1")
+        self.assertEqual(len(images_df), 2)
+        self.assertEqual(images_df.iloc[1]["path"], "/img2.png")
+
+    @patch("src.ingest.ingesting.filter_images")
+    def test_filter_images_df(self, mock_filter):
+        """filter_images_df should return only rows flagged as valid by the filter_images helper."""
+        images_df = pd.DataFrame({"path": ["/img1.png", "/img2.png"]})
+        mock_filter.return_value = images_df.iloc[[0]]
+        filtered = self.ingestor.filter_images_df(images_df)
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered.iloc[0]["path"], "/img1.png")
+
+    @patch("src.ingest.ingesting.link_image_to_text")
+    def test_link_images_to_text(self, mock_link):
+        """link_images_to_text should attach captions to images using the link_image_to_text helper."""
+        images_df = pd.DataFrame({"path": ["/img1.png"]})
+        texts_df = pd.DataFrame({"text": ["Hello"]})
+        mock_link.return_value = images_df.assign(caption="Hello")
+        linked = self.ingestor.link_images_to_text(images_df, texts_df)
+        self.assertIn("caption", linked.columns)
+        self.assertEqual(linked.iloc[0]["caption"], "Hello")
+
+    @patch("src.ingest.ingesting.chunking")
+    def test_chunking_df(self, mock_chunk):
+        """chunking_df should transform texts DataFrame into chunk DataFrame using chunking helper."""
+        texts_df = pd.DataFrame([{"text": "Hello"}, {"text": "World"}])
+        mock_chunk.return_value = [{"text": "Hello World"}]
+        linked = self.ingestor.chunking_df(texts_df)
+        self.assertEqual(linked.iloc[0]["text"], "Hello World")
+
+    @patch("src.ingest.ingesting.write_parquet")
+    def test_save_results_calls_write_parquet(self, mock_write):
+        """save_results should persist texts, images and chunks DataFrames by calling write_parquet."""
+        texts_df = pd.DataFrame({"text": ["t"]})
+        images_df = pd.DataFrame({"path": ["/img.png"]})
+        chunks_df = pd.DataFrame({"text": ["t"]})
+        self.ingestor.save_results(texts_df, images_df, chunks_df)
+        mock_write.assert_any_call(ANY, TEXT_BLOCKS_DF_PATH)
+        mock_write.assert_any_call(ANY, IMAGES_DF_PATH)
+        mock_write.assert_any_call(ANY, CHUNKS_DF_PATH)
+
+    @patch("src.ingest.ingesting.PDFIngestor.delete_old_images")
+    @patch("src.ingest.ingesting.PDFIngestor.load_textbooks")
+    @patch("src.ingest.ingesting.PDFIngestor.extract_data_from_pdfs")
+    @patch("src.ingest.ingesting.PDFIngestor.filter_images_df")
+    @patch("src.ingest.ingesting.PDFIngestor.link_images_to_text")
+    @patch("src.ingest.ingesting.PDFIngestor.chunking_df")
+    @patch("src.ingest.ingesting.PDFIngestor.sort_texts_df")
+    @patch("src.ingest.ingesting.PDFIngestor.save_results")
+    def test_run_pipeline_all_steps(
+            self, mock_save,  mock_sort,
+            mock_chunk, mock_link, mock_filter,
+            mock_extract, mock_load, mock_delete
+    ):
+        """run should execute all pipeline steps in order when flags are enabled."""
+        mock_load.return_value = pd.DataFrame({"pdf_name": ["a.pdf"]})
+        mock_extract.return_value = (
+            pd.DataFrame({"text": ["t"]}).to_dict("records"),
+            pd.DataFrame({"path": ["/img.png"]}).to_dict("records")
+        )
+        mock_filter.return_value = pd.DataFrame({"path": ["/img.png"]})
+        mock_link.return_value = pd.DataFrame({"path": ["/img.png"], "caption": ["t"]})
+        mock_chunk.return_value = pd.DataFrame({"text": ["t"]})
+        mock_sort.return_value = pd.DataFrame({"text": ["t"]})
+
+        self.ingestor.run(filter_images_flag=True, link_images_flag=True)
+
+        mock_delete.assert_called_once()
+        mock_load.assert_called_once()
+        mock_extract.assert_called_once()
+        mock_filter.assert_called_once()
+        mock_link.assert_called_once()
+        mock_chunk.assert_called_once()
+        mock_save.assert_called_once()
+
+
+if __name__ == "__main__":
+    unittest.main()

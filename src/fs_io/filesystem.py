@@ -19,3 +19,15 @@ def ensure_parent_dir(file_path: Path) -> None:
         file_path (Path): Path to the file whose parent directory should exist.
     """
     ensure_dir(file_path.parent)
+
+def remove_file(file_path: Path) -> None:
+    """
+    Removes a file if it exists.
+    Args:
+        file_path (Path): Path to the file to be removed.
+    """
+    if file_path.exists():
+        file_path.unlink()
+        logger.info(f"Removed file: {file_path}")
+    else:
+        logger.warning(f"File not found, cannot remove: {file_path}")

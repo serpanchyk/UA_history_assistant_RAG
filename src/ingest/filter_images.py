@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 
 import pandas as pd
@@ -5,10 +6,25 @@ import cv2
 from pyzbar.pyzbar import decode
 import numpy as np
 from tqdm import tqdm
+from dataclasses import dataclass
 
 from src import REJECTED_IMAGES_DIR_PATH
-from src.io.images import move_image
+from src.fs_io.images import move_image, read_image
 from src.logger import logger
+
+class RejectReason(str, Enum):
+    READ_FAILED = "read_failed"
+    QR_CODE = "qr_code"
+    UI_ELEMENT = "ui_element"
+
+THRESHOLD = 90 # Variance of Laplacian threshold for blur detection
+H_LIMIT, W_LIMIT = 100, 100 # Minimum height and width to consider for blur detection
+CROP_RATIO = 0.1 # Ratio to crop from each side before blur detection
+
+@dataclass(frozen=True)
+class ImageValidationResult:
+    is_valid: bool
+    reasons: list[RejectReason]
 
 def is_qrcode(gray_image: np.ndarray) -> bool:
     """Check if the grayscale image contains a QR code."""
@@ -20,16 +36,22 @@ def is_qrcode(gray_image: np.ndarray) -> bool:
     detected_objects = decode(inverted_image)
     return len(detected_objects) > 0
 
-def is_gradient(gray_image: np.ndarray) -> bool:
+
+def is_ui_element(gray_image: np.ndarray) -> bool:
     """Check if the grayscale image is mostly gradient/blur (not sharp)."""
-    threshold = 100
+    if gray_image is None or not isinstance(gray_image, np.ndarray):
+        raise ValueError("Input must be a valid numpy ndarray.")
+
+    if len(gray_image.shape) != 2:
+        raise ValueError("Input image must be grayscale (2D array).")
+
     h, w = gray_image.shape
 
-    if h < 100 and w < 100:
+    if h < H_LIMIT and w < W_LIMIT:
         return True
 
-    margin_h = int(h * 0.1)
-    margin_w = int(w * 0.1)
+    margin_h = int(h * CROP_RATIO)
+    margin_w = int(w * CROP_RATIO)
 
     if h > 2 * margin_h and w > 2 * margin_w:
         cropped_image = gray_image[margin_h:h - margin_h, margin_w:w - margin_w]
@@ -37,7 +59,24 @@ def is_gradient(gray_image: np.ndarray) -> bool:
         return True
 
     laplacian_var = cv2.Laplacian(cropped_image, cv2.CV_64F).var()
-    return laplacian_var < threshold
+    return laplacian_var < THRESHOLD
+
+def is_image_valid(image: np.ndarray) -> ImageValidationResult:
+    """Checks whether image is valid: exists, not qrcode and not ui element."""
+    reasons = []
+
+    if image is None:
+        reasons.append(RejectReason.READ_FAILED)
+        return ImageValidationResult(False, reasons)
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    if is_qrcode(gray_image):
+        reasons.append(RejectReason.QR_CODE)
+    if is_ui_element(gray_image):
+        reasons.append(RejectReason.UI_ELEMENT)
+
+    return ImageValidationResult(len(reasons) == 0, reasons)
+
 
 def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     """
@@ -56,19 +95,22 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
             desc="Filtering images"
     )):
         image_path = Path(image_row.path)
-        image = cv2.imread(str(image_path))
+        image = read_image(image_path)
 
-        if image is None:
-            keep_image = False
-            logger.warning(f"Image could not be read: {image_path}")
-        else:
-            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            keep_image = not (is_qrcode(gray_image) or is_gradient(gray_image))
+        result = is_image_valid(image)
 
-        if keep_image:
+        if result.is_valid:
             keep_indices.append(idx)
         else:
+            logger.info(
+                "Reject image",
+                extra={
+                    "path": str(image_path),
+                    "reason": result.reasons,
+                    "doc_id": image_row.doc_id,
+                    "page": image_row.page,
+                }
+            )
             move_image(image_path, REJECTED_IMAGES_DIR_PATH)
-
 
     return df_images.iloc[keep_indices]
