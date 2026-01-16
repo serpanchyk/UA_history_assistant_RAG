@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 
 import pandas as pd
@@ -5,10 +6,21 @@ import cv2
 from pyzbar.pyzbar import decode
 import numpy as np
 from tqdm import tqdm
+from dataclasses import dataclass
 
 from src import REJECTED_IMAGES_DIR_PATH
 from src.fs_io.images import move_image, read_image
 from src.logger import logger
+
+class RejectReason(str, Enum):
+    READ_FAILED = "read_failed"
+    QR_CODE = "qr_code"
+    UI_ELEMENT = "ui_element"
+
+@dataclass(frozen=True)
+class ImageValidationResult:
+    is_valid: bool
+    reasons: list[RejectReason]
 
 def is_qrcode(gray_image: np.ndarray) -> bool:
     """Check if the grayscale image contains a QR code."""
@@ -49,13 +61,20 @@ def is_ui_element(gray_image: np.ndarray) -> bool:
     laplacian_var = cv2.Laplacian(cropped_image, cv2.CV_64F).var()
     return laplacian_var < threshold
 
-def is_image_valid(image: np.ndarray) -> bool:
+def is_image_valid(image: np.ndarray) -> ImageValidationResult:
     """Checks whether image is valid: exists, not qrcode and not ui element."""
-    if image is None:
-        return False
+    reasons = []
 
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    return not (is_qrcode(gray_image) or is_ui_element(gray_image))
+    if image is None:
+        reasons.append(RejectReason.READ_FAILED)
+        return ImageValidationResult(False, reasons)
+
+    if is_qrcode(image):
+        reasons.append(RejectReason.QR_CODE)
+    if is_ui_element(image):
+        reasons.append(RejectReason.UI_ELEMENT)
+
+    return ImageValidationResult(len(reasons) == 0, reasons)
 
 
 def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
@@ -77,11 +96,20 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
         image_path = Path(image_row.path)
         image = read_image(image_path)
 
-        keep_image = is_image_valid(image)
+        result = is_image_valid(image)
 
-        if keep_image:
+        if result.is_valid:
             keep_indices.append(idx)
         else:
+            logger.info(
+                "Reject image",
+                extra={
+                    "path": str(image_path),
+                    "reason": result.reasons,
+                    "doc_id": image_row.doc_id,
+                    "page": image_row.page,
+                }
+            )
             move_image(image_path, REJECTED_IMAGES_DIR_PATH)
 
     return df_images.iloc[keep_indices]
