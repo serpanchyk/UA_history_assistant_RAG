@@ -1,5 +1,7 @@
 from pathlib import Path
 import pandas as pd
+
+from src.fs_io.filesystem import remove_file
 from src.ingest.caption_linking import link_image_to_text
 from src.ingest.chunking import chunking
 from src.ingest.extraction import extract_data
@@ -129,6 +131,14 @@ class PDFIngestor:
             f"and chunks to {CHUNKS_DF_PATH}."
         )
 
+    def remove_files(self):
+        """Removes files if pipeline stop working"""
+        logger.info("Removing files due to pipeline failure.")
+        remove_file(TEXT_BLOCKS_DF_PATH)
+        remove_file(IMAGES_DF_PATH)
+        remove_file(CHUNKS_DF_PATH)
+        self.delete_old_images(force=True)
+
     def run(
             self,
             filter_images_flag: bool = True,
@@ -160,6 +170,8 @@ class PDFIngestor:
 
             self.save_results(text_blocks_df, images_df, chunks_df)
             logger.info("PDF ingestion pipeline finished successfully.")
+
         except Exception as err:
+            self.remove_files()
             logger.error(f"Pipeline failed: {err}")
             raise
