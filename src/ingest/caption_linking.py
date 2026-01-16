@@ -5,7 +5,7 @@ from tqdm import tqdm
 from src.logger import logger
 from src.utils.spatial_calculations import distance_between_bboxes
 
-def get_texts_for_image(image_row: pd.Series, text_groups: DataFrameGroupBy) -> pd.DataFrame | None:
+def find_texts_on_same_page(image_row: pd.Series, text_groups: DataFrameGroupBy) -> pd.DataFrame | None:
     """
     Retrieves all text blocks that belong to the same document and page
     as the given image.
@@ -63,7 +63,7 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
     text_groups = df_text_blocks.groupby(['doc_id', 'page'])
     for idx in tqdm(range(len(df_images)), desc="Linking captions"):
         image_row = df_images.iloc[idx]
-        texts_df = get_texts_for_image(image_row, text_groups)
+        texts_df = find_texts_on_same_page(image_row, text_groups)
         if texts_df is None:
             continue
 
