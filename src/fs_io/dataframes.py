@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from src.io.filesystem import ensure_parent_dir
+from src.fs_io.filesystem import ensure_parent_dir
 from src.logger import logger
 
 

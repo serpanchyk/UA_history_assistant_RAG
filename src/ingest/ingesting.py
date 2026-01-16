@@ -1,11 +1,15 @@
 from pathlib import Path
 import pandas as pd
+
+from src.fs_io.filesystem import remove_file
 from src.ingest.caption_linking import link_image_to_text
+from src.ingest.chunking import chunking
 from src.ingest.extraction import extract_data
 from src.ingest.filter_images import filter_images
-from src.io.dataframes import read_parquet, write_parquet
-from src.io.images import delete_images
-from src import TEXTBOOKS_DF_PATH, TEXT_BLOCKS_DF_PATH, IMAGES_DF_PATH, IMAGES_DIR_PATH
+from src.fs_io.dataframes import read_parquet, write_parquet
+from src.fs_io.images import delete_images
+from src import TEXTBOOKS_DF_PATH, TEXT_BLOCKS_DF_PATH, IMAGES_DF_PATH, IMAGES_DIR_PATH, CHUNKS_DF_PATH
+from src.ingest.sorting_texts import sort_texts
 from src.logger import logger
 
 
@@ -52,6 +56,7 @@ class PDFIngestor:
         text_list, image_list = extract_data(textbooks_df)
         text_blocks_df: pd.DataFrame = pd.DataFrame(text_list)
         images_df: pd.DataFrame = pd.DataFrame(image_list)
+
         logger.info(f"Extracted {len(text_blocks_df)} text blocks and {len(images_df)} images.")
         return text_blocks_df, images_df
 
@@ -80,7 +85,37 @@ class PDFIngestor:
         logger.info("Linked images to text blocks.")
         return linked_df
 
-    def save_results(self, text_blocks_df: pd.DataFrame, images_df: pd.DataFrame) -> None:
+    def sort_texts_df(self, text_blocks_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Sorts text blocks in natural reading order.
+        Args:
+            text_blocks_df (pd.DataFrame): Text blocks DataFrame.
+        Returns:
+            pd.DataFrame: Sorted text blocks DataFrame.
+        """
+        sort_texts(text_blocks_df)
+        logger.info("Sorted text blocks.")
+        return text_blocks_df
+
+    def chunking_df(self, text_blocks_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Aggreates text blocks to bigger chunks.
+        Args:
+            text_blocks_df (pd.DataFrame): Text blocks DataFrame.
+        Returns:
+            pd.DataFrame: Chunks DataFrame.
+        """
+        chunks: list[dict] = chunking(text_blocks_df)
+        chunks_df: pd.DataFrame = pd.DataFrame(chunks)
+        logger.info("Converted text blocks to chunks.")
+        return chunks_df
+
+    def save_results(
+            self,
+            text_blocks_df: pd.DataFrame,
+            images_df: pd.DataFrame,
+            chunks_df: pd.DataFrame
+    ) -> None:
         """
         Saves processed DataFrames to parquet files.
         Args:
@@ -89,15 +124,34 @@ class PDFIngestor:
         """
         write_parquet(text_blocks_df, TEXT_BLOCKS_DF_PATH)
         write_parquet(images_df, IMAGES_DF_PATH)
-        logger.info(f"Saved text blocks to {TEXT_BLOCKS_DF_PATH} and images to {IMAGES_DF_PATH}")
+        write_parquet(chunks_df, CHUNKS_DF_PATH)
+        logger.info(
+            f"Saved text blocks to {TEXT_BLOCKS_DF_PATH}, "
+            f"images to {IMAGES_DF_PATH} "
+            f"and chunks to {CHUNKS_DF_PATH}."
+        )
 
-    def run(self, filter_images_flag: bool = True, link_images_flag: bool = True) -> None:
+    def remove_files(self):
+        """Removes files if pipeline stop working"""
+        logger.info("Removing files due to pipeline failure.")
+        remove_file(TEXT_BLOCKS_DF_PATH)
+        remove_file(IMAGES_DF_PATH)
+        remove_file(CHUNKS_DF_PATH)
+        self.delete_old_images(force=True)
+
+    def run(
+            self,
+            filter_images_flag: bool = True,
+            link_images_flag: bool = True,
+            sort_texts_flag: bool = True
+    ) -> None:
         """
         Runs the full ingestion pipeline.
         Args:
             filter_images_flag (bool): If True, filters images.
             link_images_flag (bool): If True, links images to nearest text blocks.
         """
+
         logger.info("Starting PDF ingestion pipeline.")
         try:
             self.delete_old_images(force=True)
@@ -109,9 +163,15 @@ class PDFIngestor:
 
             if link_images_flag:
                 images_df = self.link_images_to_text(images_df, text_blocks_df)
+            if sort_texts_flag:
+                text_blocks_df = self.sort_texts_df(text_blocks_df)
 
-            self.save_results(text_blocks_df, images_df)
+            chunks_df = self.chunking_df(text_blocks_df)
+
+            self.save_results(text_blocks_df, images_df, chunks_df)
             logger.info("PDF ingestion pipeline finished successfully.")
+
         except Exception as err:
+            self.remove_files()
             logger.error(f"Pipeline failed: {err}")
             raise

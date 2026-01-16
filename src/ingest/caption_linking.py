@@ -1,28 +1,53 @@
 import pandas as pd
+from pandas.core.groupby.generic import DataFrameGroupBy
 from tqdm import tqdm
 
 from src.logger import logger
+from src.utils.spatial_calculations import distance_between_bboxes
 
-def get_centroid(bbox: tuple) -> tuple:
+def find_texts_on_same_page(image_row: pd.Series, text_groups: DataFrameGroupBy) -> pd.DataFrame | None:
     """
-    Computes the centroid of a bounding box.
+    Retrieves all text blocks that belong to the same document and page
+    as the given image.
     Args:
-        bbox (tuple): Bounding box coordinates [x0, y0, x1, y1].
+        image_row (tuple): A row from the images DataFrame containing
+            at least 'doc_id', 'page', and 'path'.
+        text_groups (DataFrameGroupBy): Text blocks grouped by ('doc_id', 'page').
     Returns:
-        tuple: (x_center, y_center)
+        pd.DataFrame | None: DataFrame of text blocks for the image's page,
+        or None if no text blocks are found.
     """
-    return ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
 
-def get_distance_squared(c1: tuple, c2: tuple) -> float:
+    key = (image_row.doc_id, image_row.page)
+
+    if key not in text_groups.groups:
+        logger.debug(f"No text found for image: {image_row.path}")
+        return None
+
+    return text_groups.get_group(key)
+
+
+def find_closest_text(image_bbox: tuple, texts_df: pd.DataFrame) -> str | None:
     """
-    Computes squared distance between two points.
+    Finds the text block whose bounding box is closest to the given image.
+    Distance is computed between bounding box centroids.
     Args:
-        c1 (tuple): First point (x, y)
-        c2 (tuple): Second point (x, y)
+        image_bbox (tuple): Bounding box of the image (x0, y0, x1, y1).
+        texts_df (pd.DataFrame): DataFrame containing text blocks with
+            'bbox' and 'text' columns.
     Returns:
-        float: Squared distance
+        str | None: Text of the closest text block, or None if no text is available.
     """
-    return (c2[0] - c1[0])**2 + (c2[1] - c1[1])**2
+    if texts_df.empty:
+        return None
+
+    distances = texts_df['bbox'].apply(
+        lambda bbox: distance_between_bboxes(image_bbox, bbox)
+    )
+
+    idxmin = distances.idxmin()
+
+    return texts_df.loc[idxmin, 'text']
 
 def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) -> pd.DataFrame:
     """
@@ -36,25 +61,13 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
 
     df_images['caption'] = None
     text_groups = df_text_blocks.groupby(['doc_id', 'page'])
-    for idx, image_row in enumerate(tqdm(
-            df_images.itertuples(),
-            total=len(df_images),
-            desc="Linking captions to images"
-    )):
-        key = (image_row.doc_id, image_row.page)
-
-        if key not in text_groups.groups:
-            logger.debug(f"No text found for image: {image_row.path}")
+    for idx in tqdm(range(len(df_images)), desc="Linking captions"):
+        image_row = df_images.iloc[idx]
+        texts_df = find_texts_on_same_page(image_row, text_groups)
+        if texts_df is None:
             continue
 
-        texts_candidates_df = text_groups.get_group(key)
-
-        distance_criteria = lambda second_bbox: get_distance_squared(
-            c1=get_centroid(image_row.bbox),
-            c2=get_centroid(second_bbox)
-        )
-
-        idx_min = texts_candidates_df['bbox'].apply(distance_criteria).idxmin()
-        df_images.iloc[idx, df_images.columns.get_loc('caption')] = texts_candidates_df.loc[idx_min, 'text']
+        caption = find_closest_text(tuple(image_row.bbox), texts_df)
+        df_images.at[idx, 'caption'] = caption
 
     return df_images
