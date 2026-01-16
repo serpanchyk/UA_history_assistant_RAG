@@ -1,10 +1,10 @@
 from pathlib import Path
 from FlagEmbedding import BGEM3FlagModel
 import torch
+from qdrant_client import models
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
 
-from notebooks.filter_images import image_path
 from src.logger import logger
 from src.fs_io.images import read_image, cv2_array_to_PIL
 
@@ -92,7 +92,7 @@ class EmbeddingService:
             image_vec = self.embed_image(image)
 
         return {
-            "caption_dense_vector": dense_vec,
-            "caption_sparse_vector": sparse_vec,
-            "image_vector": image_vec
+            "dense": dense_vec,
+            "sparse": models.SparseVector(**sparse_vec),
+            "image": image_vec
         }

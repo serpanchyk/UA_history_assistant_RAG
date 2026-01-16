@@ -1,5 +1,6 @@
-from typing import Callable, Iterable, Any
+from typing import Callable, Iterable, Any, Dict, List
 import pandas as pd
+from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
 from qdrant_client import QdrantClient, models
 import uuid
@@ -125,27 +126,77 @@ class QdrantVectorStore(VectorStore):
             processor=text_processor
         )
 
-    def search_text_collection(self, query: str, top_k: int = 5):
-        embeddings = self.embedding_service.embed_text(query)
-        sparse_embedding = embeddings["text_sparse_vector"]
-        dense_embedding = embeddings["text_dense_vector"]
-
-        search_result = self.client.query_points(
-            collection_name="ukrainian_historical_text",
+    def _search_text_core(self, vectors: Dict[str, Any], k: int):
+        return self.client.query_points(
+            collection_name=self.TEXT_COLLECTION,
             prefetch=[
                 models.Prefetch(
-                    query=sparse_embedding,
+                    query=vectors["sparse"],
                     using="text_sparse_vector",
-                    limit=20,
+                    limit=k * 2,
                 ),
                 models.Prefetch(
-                    query=dense_embedding,
+                    query=vectors["dense"],
                     using="text_dense_vector",
-                    limit=20,
+                    limit=k * 2,
                 )
             ],
-            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            query=models.FusionQuery(method=models.Fusion.RRF),
+            limit=k
         )
 
-        return search_result
+    def _search_image_core(self, vectors: Dict[str, Any], k: int):
+        return self.client.query_points(
+            collection_name=self.IMAGE_COLLECTION,
+            prefetch=[
+                models.Prefetch(
+                    query=vectors["sparse"],
+                    using="caption_sparse_vector",
+                    limit=k * 2,
+                ),
+                models.Prefetch(
+                    query=vectors["dense"],
+                    using="caption_dense_vector",
+                    limit=k * 2,
+                ),
+                models.Prefetch(
+                    query=vectors["image"],
+                    using="image_vector",
+                    limit=k * 2,
+                )
+            ],
+            query=models.FusionQuery(method=models.Fusion.RRF),
+            limit=k
+        )
 
+    def retrieve_all(self, query: str, k_text: int = 5, k_image: int = 3) -> Dict[str, List[Document]]:
+        """
+        Calculates embeddings ONCE, then retrieves from BOTH collections.
+        """
+        vectors = self.embedding_service.embed_hybrid(query)
+
+        text_results = self._search_text_core(vectors, k_text)
+        image_results = self._search_image_core(vectors, k_image)
+
+        return {
+            "texts": [
+                Document(
+                    page_content=p.payload.get("text", ""),
+                    metadata={"doc_id": p.payload.get("doc_id"), "pages": p.payload.get("pages")}
+                ) for p in text_results.points
+            ],
+            "images": [
+                Document(
+                    page_content=p.payload.get("caption", ""),
+                    metadata={"path": p.payload.get("path"), "doc_id": p.payload.get("doc_id")}
+                ) for p in image_results.points
+            ]
+        }
+
+
+    def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> List[Document]:
+        """
+        Standard interface. Only fetches text by default.
+        Uses the shared optimized pipeline internally.
+        """
+        return self.retrieve_all(query, k, **kwargs)["texts"]
