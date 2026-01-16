@@ -1,3 +1,5 @@
+"""Unit and integration tests for PDF extraction helpers: text blocks, images, pages and full-document extraction."""
+
 import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -19,7 +21,10 @@ from tests.fixtures.mock_classes import MockPage
 
 
 class TestExtractionData(unittest.TestCase):
+    """Unit tests for individual extraction helpers (text/image/block processing and PDF path resolution)."""
+
     def test_extract_text_block_returns_block(self):
+        """extract_text_block should convert a block to a dict with text, bbox, doc_id and page."""
         block = {'bbox': [0, 0, 100, 100]}
         with patch('src.ingest.extraction.block_to_text', return_value='Hello'):
             result = extract_text_block(block, doc_id=1, page_number=2)
@@ -30,6 +35,7 @@ class TestExtractionData(unittest.TestCase):
         self.assertEqual(result['page'], 2)
 
     def test_extract_text_block_none_when_no_text(self):
+        """Return None from extract_text_block when OCR/text extraction yields no text."""
         block = {'bbox': [0, 0, 100, 100]}
         with patch('src.ingest.extraction.block_to_text', return_value=None):
             result = extract_text_block(block, doc_id=1, page_number=2)
@@ -38,6 +44,7 @@ class TestExtractionData(unittest.TestCase):
 
     @patch('src.ingest.extraction.write_image')
     def test_save_image_saves_and_returns_path(self, mock_write_image):
+        """save_image should write image bytes and return a predictable path."""
         image_bytes = b"fakebytes"
         ext = "png"
         doc_id = 1
@@ -49,6 +56,7 @@ class TestExtractionData(unittest.TestCase):
 
     @patch('src.ingest.extraction.save_image', return_value=Path("/fake/path/image.png"))
     def test_extract_image_returns_info(self, mock_save_image):
+        """extract_image should wrap image bytes into metadata including bbox, page, doc_id and path."""
         block = {"bbox": [0, 0, 10, 10], "image": b"imgbytes", "ext": "png"}
         result = extract_image(block, doc_id=1, page_number=2)
         self.assertIsNotNone(result)
@@ -58,6 +66,7 @@ class TestExtractionData(unittest.TestCase):
         self.assertEqual(result['path'], "/fake/path/image.png")
 
     def test_process_block_text(self):
+        """process_block should return text when block is a text block and no image info."""
         block = {"type": TEXT_BLOCK_TYPE, "bbox": [0, 0, 10, 10]}
         with patch('src.ingest.extraction.extract_text_block', return_value={"text": "x"}):
             text, image = process_block(block, doc_id=1, page_number=1)
@@ -67,6 +76,7 @@ class TestExtractionData(unittest.TestCase):
     @patch('src.ingest.extraction.extract_image',
            return_value={"path": "/fake", "bbox": [0, 0, 1, 1], "page": 1, "doc_id": 1})
     def test_process_block_image(self, mock_extract_image):
+        """process_block should return image metadata for image blocks and None for text."""
         block = {"type": IMAGE_BLOCK_TYPE, "bbox": [0, 0, 1, 1], "image": b"bytes", "ext": "png"}
         text, image = process_block(block, doc_id=1, page_number=1)
         self.assertIsNone(text)
@@ -74,6 +84,7 @@ class TestExtractionData(unittest.TestCase):
 
     @patch('src.ingest.extraction.TEXTBOOKS_DIR_PATH', Path("/fake/dir"))
     def test_get_pdf_path_exists(self):
+        """get_pdf_path should return a Path when the referenced pdf exists on disk."""
         fake_pdf_name = "file.pdf"
         row = MagicMock()
         row.pdf_name = fake_pdf_name
@@ -83,6 +94,7 @@ class TestExtractionData(unittest.TestCase):
 
     @patch('src.ingest.extraction.TEXTBOOKS_DIR_PATH', Path("/fake/dir"))
     def test_get_pdf_path_missing(self):
+        """get_pdf_path should return None and not raise when the file is absent."""
         row = MagicMock()
         row.pdf_name = "missing.pdf"
         with patch('pathlib.Path.exists', return_value=False):
@@ -90,9 +102,11 @@ class TestExtractionData(unittest.TestCase):
         self.assertIsNone(path)
 
 class TestEstractionDataIntegration(unittest.TestCase):
+    """Integration-like tests that ensure pages, blocks and full PDF extraction glue the pieces together."""
 
     @patch("src.ingest.extraction.pymupdf.open")
     def test_iter_pdf_pages_yields_pages(self, mock_open):
+        """iter_pdf_pages should yield pages by opening the document context manager."""
         mock_doc = MagicMock()
         mock_doc.__iter__.return_value = ["page1", "page2"]
         mock_open.return_value.__enter__.return_value = mock_doc
@@ -102,6 +116,7 @@ class TestEstractionDataIntegration(unittest.TestCase):
         mock_open.assert_called_once_with(Path("/fake.pdf"))
 
     def test_iter_page_blocks_returns_blocks(self):
+        """iter_page_blocks should parse and return the 'blocks' list the page exposes."""
         page = MagicMock()
         page.get_text.return_value = {
             "blocks": [{"type": 0}, {"type": 1}]
@@ -115,6 +130,7 @@ class TestEstractionDataIntegration(unittest.TestCase):
     @patch("src.ingest.extraction.iter_page_blocks")
     @patch("src.ingest.extraction.process_block")
     def test_extract_blocks_from_pdf(self, mock_process_block, mock_iter_page_blocks, mock_iter_pdf_pages):
+        """extract_blocks_from_pdf should accumulate text and image outputs from process_block across pages."""
         mock_iter_pdf_pages.return_value = [MockPage(1)]
         mock_iter_page_blocks.return_value = [{"type": 0}, {"type": 1}]
         mock_process_block.side_effect = [
@@ -131,6 +147,7 @@ class TestEstractionDataIntegration(unittest.TestCase):
     @patch("src.ingest.extraction.extract_blocks_from_pdf")
     @patch("src.ingest.extraction.get_pdf_path")
     def test_extract_data_accumulates_all(self, mock_get_pdf_path, mock_extract_blocks_from_pdf):
+        """extract_data should iterate textbooks and aggregate all texts and images from PDFs."""
         df_docs = pd.DataFrame({"pdf_name": ["a.pdf", "b.pdf"]})
         mock_get_pdf_path.side_effect = [Path("/fake/a.pdf"), Path("/fake/b.pdf")]
         mock_extract_blocks_from_pdf.side_effect = [
@@ -149,3 +166,4 @@ class TestEstractionDataIntegration(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

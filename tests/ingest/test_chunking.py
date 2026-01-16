@@ -1,3 +1,5 @@
+"""Tests for chunking text blocks into page-aware chunks used for downstream indexing."""
+
 import unittest
 from unittest.mock import patch
 
@@ -7,7 +9,11 @@ from src.ingest.chunking import chunking
 
 
 class TestChunking(unittest.TestCase):
+    """Test that sequential text blocks are concatenated into chunks while preserving doc/page boundaries."""
+
     def test_text_gets_chunked_in_one_doc(self):
+        """Chunk sequential blocks across pages within a single doc into fixed-size chunks."""
+
         text_blocks_df = pd.DataFrame({
             'text': ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
             'doc_id': [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -28,6 +34,7 @@ class TestChunking(unittest.TestCase):
         self.assertEqual(texts[2]['doc_id'], 0)
 
     def test_text_gets_chunked_in_multiple_docs(self):
+        """Ensure chunking restarts per document and chunks are produced per-doc appropriately."""
 
         text_blocks_df = pd.DataFrame({
             'text': ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
