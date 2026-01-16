@@ -6,7 +6,9 @@ def get_centroid(bbox: tuple) -> tuple:
     Returns:
         tuple: (x_center, y_center)
     """
-    return ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
+    if len(bbox) != 4:
+        raise ValueError(f"Expected 4-element bbox, got {len(bbox)}")
+    return (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
 
 def get_distance_squared(c1: tuple, c2: tuple) -> float:
     """
