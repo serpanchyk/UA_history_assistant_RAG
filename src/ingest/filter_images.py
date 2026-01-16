@@ -17,6 +17,10 @@ class RejectReason(str, Enum):
     QR_CODE = "qr_code"
     UI_ELEMENT = "ui_element"
 
+THRESHOLD = 90 # Variance of Laplacian threshold for blur detection
+H_LIMIT, W_LIMIT = 100, 100 # Minimum height and width to consider for blur detection
+CROP_RATIO = 0.1 # Ratio to crop from each side before blur detection
+
 @dataclass(frozen=True)
 class ImageValidationResult:
     is_valid: bool
@@ -41,17 +45,13 @@ def is_ui_element(gray_image: np.ndarray) -> bool:
     if len(gray_image.shape) != 2:
         raise ValueError("Input image must be grayscale (2D array).")
 
-    threshold = 90
-    h_limit, w_limit = 100, 100
-    crop_ratio = 0.1
-
     h, w = gray_image.shape
 
-    if h < h_limit and w < w_limit:
+    if h < H_LIMIT and w < W_LIMIT:
         return True
 
-    margin_h = int(h * crop_ratio)
-    margin_w = int(w * crop_ratio)
+    margin_h = int(h * CROP_RATIO)
+    margin_w = int(w * CROP_RATIO)
 
     if h > 2 * margin_h and w > 2 * margin_w:
         cropped_image = gray_image[margin_h:h - margin_h, margin_w:w - margin_w]
@@ -59,7 +59,7 @@ def is_ui_element(gray_image: np.ndarray) -> bool:
         return True
 
     laplacian_var = cv2.Laplacian(cropped_image, cv2.CV_64F).var()
-    return laplacian_var < threshold
+    return laplacian_var < THRESHOLD
 
 def is_image_valid(image: np.ndarray) -> ImageValidationResult:
     """Checks whether image is valid: exists, not qrcode and not ui element."""
