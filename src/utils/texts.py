@@ -3,9 +3,6 @@ import unicodedata
 
 MIN_TEXT_LENGTH = 6
 
-import re
-import unicodedata
-
 ALLOWED_CATEGORIES = {"L", "N", "P", "Z"}
 
 def normalize_text(text: str) -> str:
