@@ -4,6 +4,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
 
+from notebooks.filter_images import image_path
 from src.logger import logger
 from src.fs_io.images import read_image, cv2_array_to_PIL
 
@@ -80,12 +81,15 @@ class EmbeddingService:
 
         return embedding.tolist()
 
-    def embed_hybrid(self, text: str, image: Path) -> Dict[str, List[float]]:
+    def embed_hybrid(self, text: str, image: Path = None) -> Dict[str, List[float]]:
         """Creates vectors for a multimodal entry (Caption + Image)."""
         text_output = self.embed_text(text)
         dense_vec, sparse_vec =  text_output["text_dense_vector"], text_output["text_sparse_vector"]
 
-        image_vec = self.embed_image(image)
+        if image is None:
+            image_vec = self.embed_image(text)
+        else:
+            image_vec = self.embed_image(image)
 
         return {
             "caption_dense_vector": dense_vec,

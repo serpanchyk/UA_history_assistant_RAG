@@ -124,3 +124,28 @@ class QdrantVectorStore(VectorStore):
             items=text_chunks,
             processor=text_processor
         )
+
+    def search_text_collection(self, query: str, top_k: int = 5):
+        embeddings = self.embedding_service.embed_text(query)
+        sparse_embedding = embeddings["text_sparse_vector"]
+        dense_embedding = embeddings["text_dense_vector"]
+
+        search_result = self.client.query_points(
+            collection_name="ukrainian_historical_text",
+            prefetch=[
+                models.Prefetch(
+                    query=sparse_embedding,
+                    using="text_sparse_vector",
+                    limit=20,
+                ),
+                models.Prefetch(
+                    query=dense_embedding,
+                    using="text_dense_vector",
+                    limit=20,
+                )
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+        )
+
+        return search_result
+
