@@ -42,9 +42,11 @@ class EmbeddingService:
 
         sorted_items = sorted(raw_weights.items(), key=lambda item: int(item[0]))
 
+        indices, values = zip(*sorted_items) if sorted_items else ([], [])
+
         return {
-            'indices': list(map(int, sorted_items.keys())),
-            'values': list(map(float, sorted_items.values()))
+            'indices': list(map(int, indices)),
+            'values': list(map(float, values))
         }
 
     def embed_text(self, text: str):
