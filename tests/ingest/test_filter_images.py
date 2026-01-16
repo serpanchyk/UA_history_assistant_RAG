@@ -37,7 +37,7 @@ class TestFilterImages(unittest.TestCase):
 
         for image, expected in images.items():
             image = cv2.imread(str(TEST_DIR / image))
-            self.assertEqual(is_image_valid(image), expected)
+            self.assertEqual(is_image_valid(image).is_valid, expected)
 
     @patch("src.ingest.filter_images.move_image")
     def test_filter_images_happy_path(self, mock_move_image):
@@ -47,7 +47,9 @@ class TestFilterImages(unittest.TestCase):
         count_of_valid_images = 1
 
         df_images = pd.DataFrame({
-            "path": [str(TEST_DIR / image) for image in images]
+            'path': [str(TEST_DIR / image) for image in images],
+            'doc_id': [0 for _ in range(len(images))],
+            'page': [0 for _ in range(len(images))],
         })
 
         filtered_images = filter_images(df_images)
