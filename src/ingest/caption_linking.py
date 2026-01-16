@@ -5,7 +5,7 @@ from tqdm import tqdm
 from src.logger import logger
 from src.utils.spatial_calculations import distance_between_bboxes
 
-def get_texts_for_image(image_row: tuple, text_groups: DataFrameGroupBy) -> pd.DataFrame | None:
+def get_texts_for_image(image_row: pd.Series, text_groups: DataFrameGroupBy) -> pd.DataFrame | None:
     """
     Retrieves all text blocks that belong to the same document and page
     as the given image.
@@ -61,16 +61,13 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
 
     df_images['caption'] = None
     text_groups = df_text_blocks.groupby(['doc_id', 'page'])
-    for image_row in tqdm(
-            df_images.itertuples(),
-            total=len(df_images),
-            desc="Linking captions to images"
-    ):
+    for idx in tqdm(range(len(df_images)), desc="Linking captions"):
+        image_row = df_images.iloc[idx]
         texts_df = get_texts_for_image(image_row, text_groups)
         if texts_df is None:
             continue
 
         caption = find_closest_text(tuple(image_row.bbox), texts_df)
-        df_images.at[image_row.Index, 'caption'] = caption
+        df_images.at[idx, 'caption'] = caption
 
     return df_images
