@@ -10,8 +10,9 @@ class TestParquetUtils(unittest.TestCase):
     @patch("src.fs_io.dataframes.logger")
     def test_read_parquet_file_not_found(self, mock_logger):
         fake_path = Path("/fake/file.parquet")
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(FileNotFoundError) as cm:
             read_parquet(fake_path)
+        self.assertIn(str(fake_path), str(cm.exception))
         mock_logger.error.assert_called_once_with(f"Parquet file not found: {fake_path}")
 
     @patch("src.fs_io.dataframes.pd.read_parquet")

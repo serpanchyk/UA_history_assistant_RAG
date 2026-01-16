@@ -68,10 +68,11 @@ def is_image_valid(image: np.ndarray) -> ImageValidationResult:
     if image is None:
         reasons.append(RejectReason.READ_FAILED)
         return ImageValidationResult(False, reasons)
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    if is_qrcode(image):
+    if is_qrcode(gray_image):
         reasons.append(RejectReason.QR_CODE)
-    if is_ui_element(image):
+    if is_ui_element(gray_image):
         reasons.append(RejectReason.UI_ELEMENT)
 
     return ImageValidationResult(len(reasons) == 0, reasons)
