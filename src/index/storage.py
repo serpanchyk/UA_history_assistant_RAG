@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, Any, Dict, List
+from typing import Any, Iterable, Callable
 import pandas as pd
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
@@ -7,8 +7,8 @@ import uuid
 
 
 class QdrantVectorStore(VectorStore):
-    def __init__(self, embedding_service):
-        self.client = QdrantClient("localhost", port=6333)
+    def __init__(self, embedding_service, client):
+        self.client = client if client else QdrantClient("localhost", port=6333)
         self.embedding_service = embedding_service
 
         self.TEXT_COLLECTION = "ukrainian_historical_text"
@@ -20,30 +20,30 @@ class QdrantVectorStore(VectorStore):
         collections_config = {
             self.IMAGE_COLLECTION: {
                 "vectors_config": {
-                    'caption_dense_vector': models.VectorParams(
+                    'dense': models.VectorParams(
                         size=self.embedding_service.DENSE_DIM,
                         distance=models.Distance.COSINE
                     ),
-                    'image_vector': models.VectorParams(
-                        size=getattr(self.embedding_service, 'CLIP_DIM', 512),
+                    'image': models.VectorParams(
+                        size=self.embedding_service.CLIP_DIM,
                         distance=models.Distance.COSINE
                     ),
                 },
                 "sparse_vectors_config": {
-                    'caption_sparse_vector': models.SparseVectorParams(
+                    'sparse': models.SparseVectorParams(
                         index=models.SparseIndexParams(on_disk=False)
                     ),
                 }
             },
             self.TEXT_COLLECTION: {
                 "vectors_config": {
-                    'text_dense_vector': models.VectorParams(
+                    'dense': models.VectorParams(
                         size=self.embedding_service.DENSE_DIM,
                         distance=models.Distance.COSINE
                     ),
                 },
                 "sparse_vectors_config": {
-                    'text_sparse_vector': models.SparseVectorParams(
+                    'sparse': models.SparseVectorParams(
                         index=models.SparseIndexParams(on_disk=False)
                     ),
                 }
@@ -126,50 +126,50 @@ class QdrantVectorStore(VectorStore):
             processor=text_processor
         )
 
-    def _search_text_core(self, vectors: Dict[str, Any], k: int):
+    def _search_text_core(self, vectors: dict[str, Any], k: int):
         return self.client.query_points(
             collection_name=self.TEXT_COLLECTION,
             prefetch=[
                 models.Prefetch(
-                    query=vectors["sparse"],
-                    using="text_sparse_vector",
+                    query=models.SparseVector(**vectors["sparse"]),
+                    using="sparse",
                     limit=k * 2,
                 ),
                 models.Prefetch(
                     query=vectors["dense"],
-                    using="text_dense_vector",
+                    using="dense",
                     limit=k * 2,
                 )
             ],
-            query=models.FusionQuery(method=models.Fusion.RRF),
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
             limit=k
         )
 
-    def _search_image_core(self, vectors: Dict[str, Any], k: int):
+    def _search_image_core(self, vectors: dict[str, Any], k: int):
         return self.client.query_points(
             collection_name=self.IMAGE_COLLECTION,
             prefetch=[
                 models.Prefetch(
                     query=vectors["sparse"],
-                    using="caption_sparse_vector",
+                    using="sparse",
                     limit=k * 2,
                 ),
                 models.Prefetch(
                     query=vectors["dense"],
-                    using="caption_dense_vector",
+                    using="dense",
                     limit=k * 2,
                 ),
                 models.Prefetch(
                     query=vectors["image"],
-                    using="image_vector",
+                    using="image",
                     limit=k * 2,
                 )
             ],
-            query=models.FusionQuery(method=models.Fusion.RRF),
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
             limit=k
         )
 
-    def retrieve_all(self, query: str, k_text: int = 5, k_image: int = 3) -> Dict[str, List[Document]]:
+    def retrieve_all(self, query: str, k_text: int = 5, k_image: int = 3) -> dict[str, list[Document]]:
         """
         Calculates embeddings ONCE, then retrieves from BOTH collections.
         """
@@ -194,9 +194,25 @@ class QdrantVectorStore(VectorStore):
         }
 
 
-    def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> List[Document]:
+    def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> list[Document]:
         """
         Standard interface. Only fetches text by default.
         Uses the shared optimized pipeline internally.
         """
         return self.retrieve_all(query, k, **kwargs)["texts"]
+
+        # ... inside QdrantVectorStore class ...
+
+    @classmethod
+    def from_texts(cls, texts, embedding, metadatas=None, **kwargs):
+        """
+        Required by LangChain's VectorStore abstract class.
+        We don't use it because we have a custom hybrid ingestion pipeline.
+        """
+        raise NotImplementedError("Use 'add_text_entry' or 'add_image_entry' instead.")
+
+    def add_texts(self, texts, metadatas=None, **kwargs):
+        """
+        Required by LangChain's VectorStore abstract class.
+        """
+        raise NotImplementedError("Use 'add_text_entry' instead.")

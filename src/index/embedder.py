@@ -3,7 +3,6 @@ from FlagEmbedding import BGEM3FlagModel
 import torch
 from qdrant_client import models
 from sentence_transformers import SentenceTransformer
-from typing import List, Dict
 
 from src.logger import logger
 from src.fs_io.images import read_image, cv2_array_to_PIL
@@ -35,14 +34,13 @@ class EmbeddingService:
         logger.info("Models loaded successfully.")
 
 
-    def _sparse_vector_to_qdrant(self, model_output: dict):
-        """Extracts sparse weights and ensures format {int: float}."""
+    def _format_sparse(self, model_output: dict) -> dict[str, list]:
+        """Helper to format sparse output into {indices: [], values: []}."""
         raw_weights = model_output["lexical_weights"][0] \
             if isinstance(model_output["lexical_weights"], list) \
             else model_output["lexical_weights"]
 
         sorted_items = sorted(raw_weights.items(), key=lambda item: int(item[0]))
-
         indices, values = zip(*sorted_items) if sorted_items else ([], [])
 
         return {
@@ -61,14 +59,14 @@ class EmbeddingService:
 
         dense_vec = bge_output["dense_vecs"].tolist()
 
-        sparse_vec = self._sparse_vector_to_qdrant(bge_output)
+        sparse_vec = self._format_sparse(bge_output)
 
         return {
-            "text_dense_vector": dense_vec,
-            "text_sparse_vector": sparse_vec,
+            "dense": dense_vec,
+            "sparse": sparse_vec,
         }
 
-    def embed_image(self, query: Path | str) -> List[float]:
+    def embed_image(self, query: Path | str) -> list[float]:
         """Generates vector (512 dim) for image if Path were given or for text if str were given."""
         if isinstance(query, Path):
             image_input = cv2_array_to_PIL(read_image(query))
@@ -81,10 +79,9 @@ class EmbeddingService:
 
         return embedding.tolist()
 
-    def embed_hybrid(self, text: str, image: Path = None) -> Dict[str, List[float]]:
+    def embed_hybrid(self, text: str, image: Path = None) -> dict[str, list[float]]:
         """Creates vectors for a multimodal entry (Caption + Image)."""
-        text_output = self.embed_text(text)
-        dense_vec, sparse_vec =  text_output["text_dense_vector"], text_output["text_sparse_vector"]
+        text_vecs = self.embed_text(text)
 
         if image is None:
             image_vec = self.embed_image(text)
@@ -92,7 +89,7 @@ class EmbeddingService:
             image_vec = self.embed_image(image)
 
         return {
-            "dense": dense_vec,
-            "sparse": models.SparseVector(**sparse_vec),
+            "dense": text_vecs["dense"],
+            "sparse": text_vecs["sparse"],
             "image": image_vec
         }
