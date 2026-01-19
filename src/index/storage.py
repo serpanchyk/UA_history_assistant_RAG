@@ -7,7 +7,7 @@ import uuid
 
 
 class QdrantVectorStore(VectorStore):
-    def __init__(self, embedding_service, client):
+    def __init__(self, embedding_service, client = None):
         self.client = client if client else QdrantClient("localhost", port=6333)
         self.embedding_service = embedding_service
 
