@@ -1,5 +1,3 @@
-"""Tests for run_indexing: verify how chunks and images are discovered and indexed into the vector store."""
-
 import unittest
 from unittest.mock import patch, MagicMock
 import pandas as pd
