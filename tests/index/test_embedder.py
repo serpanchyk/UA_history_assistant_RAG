@@ -56,8 +56,8 @@ class TestEmbeddingService(unittest.TestCase):
         self.mock_bge_inst.encode.return_value = mock_output
 
         output = self.service.embed_text("Test Query")
-        dense = output["text_dense_vector"]
-        sparse = output["text_sparse_vector"]
+        dense = output["dense"]
+        sparse = output["sparse"]
 
         self.assertIsInstance(dense, list)
         self.assertEqual(len(dense), 1024)
@@ -88,11 +88,11 @@ class TestEmbeddingService(unittest.TestCase):
 
         result = self.service.embed_hybrid("text", Path("img.png"))
 
-        keys = ["caption_dense_vector", "caption_sparse_vector", "image_vector"]
+        keys = ["dense", "sparse", "image"]
         for k in keys:
             self.assertIn(k, result)
 
-        self.assertEqual(len(result["caption_dense_vector"]), 1024)
+        self.assertEqual(len(result["dense"]), 1024)
 
     def test_sparse_vector_edge_case_single_dict(self):
         """Test edge case where lexical_weights is a dict, not a list of dicts."""
@@ -102,7 +102,7 @@ class TestEmbeddingService(unittest.TestCase):
         }
         self.mock_bge_inst.encode.return_value = mock_output
 
-        sparse =  self.service.embed_text("Test")['text_sparse_vector']
+        sparse =  self.service.embed_text("Test")['sparse']
 
         self.assertEqual(sparse['indices'][0], 505)
         self.assertEqual(sparse['values'][0], 0.9)
