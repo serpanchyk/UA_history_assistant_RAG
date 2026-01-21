@@ -1,19 +1,17 @@
-"""Tests for image I/O utilities: reading, writing, moving and deleting images with proper logging and errors."""
-
 import unittest
 from unittest.mock import patch
 from pathlib import Path
+
+import cv2
 import numpy as np
 
-from src.fs_io.images import write_image, move_image, read_image, delete_images
+from src.fs_io.images import write_image, move_image, read_image, delete_images, cv2_array_to_PIL
 
 
 class TestImagesUtils(unittest.TestCase):
-    """Tests for image read/write behavior including error logging when files are missing."""
 
     @patch("src.fs_io.images.logger")
     def test_read_image_not_found(self, mock_logger):
-        """read_image should raise FileNotFoundError and log an error when file is missing."""
         fake_path = Path("fake/dir/image.png")
         with self.assertRaises(FileNotFoundError):
             read_image(fake_path)
@@ -23,7 +21,6 @@ class TestImagesUtils(unittest.TestCase):
     @patch("src.fs_io.images.Path.exists", return_value=True)
     @patch("src.fs_io.images.logger")
     def test_read_image_success(self, mock_logger, mock_exists, mock_read_image):
-        """read_image should call cv2.imread and return the image array when present."""
         fake_path = Path("/fake/file.png")
         image_mock = np.zeros((10, 10, 3), dtype=np.uint8)
         mock_read_image.return_value = image_mock
@@ -35,11 +32,9 @@ class TestImagesUtils(unittest.TestCase):
 
 
 class TestWriteImage(unittest.TestCase):
-    """Ensure raw image bytes are written to disk and parent directories are prepared."""
 
     @patch("src.fs_io.images.ensure_parent_dir")
     def test_write_image_calls_methods(self, mock_ensure_parent_dir):
-        """write_image should prepare parent dir and write raw bytes to disk using 'wb'."""
         fake_path = Path("/fake/dir/image.png")
         image_bytes = b"fakeimagebytes"
         m = unittest.mock.mock_open()
@@ -50,14 +45,28 @@ class TestWriteImage(unittest.TestCase):
         m.assert_called_once_with(fake_path, 'wb')
         m().write.assert_called_once_with(image_bytes)
 
+class TestConvertCV2ToPIL(unittest.TestCase):
+
+    @patch("src.fs_io.images.cv2.cvtColor")
+    @patch("src.fs_io.images.Image.fromarray")
+    def test_cv2_array_to_PIL(self, mock_fromarray, mock_cvtColor):
+        fake_array = np.zeros((10, 10, 3), dtype=np.uint8)
+        rgb_array = np.ones((10, 10, 3), dtype=np.uint8)
+        mock_cvtColor.return_value = rgb_array
+        pil_image_mock = unittest.mock.MagicMock()
+        mock_fromarray.return_value = pil_image_mock
+
+        result = cv2_array_to_PIL(fake_array)
+
+        mock_cvtColor.assert_called_once_with(fake_array,  cv2.COLOR_BGR2RGB)
+        mock_fromarray.assert_called_once_with(rgb_array)
+        self.assertEqual(result, pil_image_mock)
 
 class TestMoveImage(unittest.TestCase):
-    """Validate moving images to target directories and error handling for missing files."""
 
     @patch("src.fs_io.images.Path.exists", return_value=False)
     @patch("src.fs_io.images.logger")
     def test_move_image_file_not_found(self, mock_logger, mock_exists):
-        """move_image should raise FileNotFoundError and log when source does not exist."""
         with self.assertRaises(FileNotFoundError):
             move_image(Path("/fake/image.png"), Path("/target/dir"))
         mock_logger.error.assert_called_once()
@@ -66,7 +75,6 @@ class TestMoveImage(unittest.TestCase):
     @patch("src.fs_io.images.ensure_dir")
     @patch("src.fs_io.images.Path.exists", return_value=True)
     def test_move_image_success(self, mock_exists, mock_ensure_dir, mock_shutil_move):
-        """move_image should create target dir and call shutil.move, returning new path."""
         src_path = Path("/fake/image.png")
         target_dir = Path("/target/dir")
         new_path = target_dir / src_path.name
@@ -79,18 +87,15 @@ class TestMoveImage(unittest.TestCase):
 
 
 class TestDeleteImages(unittest.TestCase):
-    """Test safe deletion of image directories, including force flag and logging behavior."""
 
     @patch("src.fs_io.images.logger")
     def test_delete_images_force_false(self, mock_logger):
-        """delete_images must raise ValueError when force=False to avoid accidental deletions."""
         with self.assertRaises(ValueError):
             delete_images(Path("/fake/dir"), force=False)
 
     @patch("src.fs_io.images.Path.exists", return_value=False)
     @patch("src.fs_io.images.logger")
     def test_delete_images_nonexistent_dir(self, mock_logger, mock_exists):
-        """When directory doesn't exist, delete_images should warn and not error when force=True."""
         delete_images(Path("/fake/dir"), force=True)
         mock_logger.warning.assert_called_once()
 
@@ -99,7 +104,6 @@ class TestDeleteImages(unittest.TestCase):
     @patch("src.fs_io.images.shutil.rmtree")
     @patch("src.fs_io.images.logger")
     def test_delete_images_success(self, mock_logger, mock_rmtree, mock_is_dir, mock_exists):
-        """delete_images should remove directory when force=True and log the deletion."""
         path = Path("/fake/dir")
         delete_images(path, force=True)
         mock_rmtree.assert_called_once_with(path)
