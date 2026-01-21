@@ -3,7 +3,10 @@ import pandas as pd
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
 from qdrant_client import QdrantClient, models
+
 import hashlib
+import uuid
+import json
 
 from src.index.embedder import EmbeddingMode
 
@@ -72,8 +75,10 @@ class QdrantVectorStore(VectorStore):
                     values=embedding["values"]
                 ) for name, embedding in embeddings.items()}
 
-        content_str = str(sorted(metadata.items()))
-        point_id = hashlib.sha256(content_str.encode()).hexdigest()
+        content_str = json.dumps(metadata, sort_keys=True, ensure_ascii=False)
+        hash_bytes = hashlib.sha256(content_str.encode('utf-8')).digest()
+
+        point_id = str(uuid.UUID(bytes=hash_bytes[:16]))
 
         return models.PointStruct(
             id=point_id,

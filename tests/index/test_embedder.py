@@ -63,8 +63,8 @@ class TestEmbeddingService(unittest.TestCase):
         self.assertEqual(len(dense), 1024)
 
         self.assertIsInstance(sparse, dict)
-        self.assertEqual(sparse['indices'], [101, 202])
-        self.assertEqual(sparse['values'], [0.5, 0.3])
+        self.assertEqual(sparse['indices'], (101, 202))
+        self.assertEqual(sparse['values'], (0.5, 0.3))
 
     def test_embed_image(self):
         """Test image embedding pipeline."""
