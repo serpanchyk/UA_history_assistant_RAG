@@ -2,8 +2,11 @@ from typing import Any, Iterable, Callable
 import pandas as pd
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
+from llama_cpp import Embedding
 from qdrant_client import QdrantClient, models
 import uuid
+
+from src.index.embedder import EmbeddingMode
 
 
 class QdrantVectorStore(VectorStore):
@@ -94,7 +97,7 @@ class QdrantVectorStore(VectorStore):
     def add_image_entry(self, images_df: pd.DataFrame):
         def image_processor(row):
             return (
-                self.embedding_service.embed_hybrid(text=row.caption, image=row.path),
+                self.embedding_service.embed_hybrid(text=row.caption, image=row.path, mode=EmbeddingMode.INDEX),
                 {
                     "caption": row.caption,
                     "path": str(row.path),
@@ -112,7 +115,7 @@ class QdrantVectorStore(VectorStore):
     def add_text_entry(self, text_chunks: list[dict]):
         def text_processor(chunk):
             return (
-                self.embedding_service.embed_text(chunk["text"]),
+                self.embedding_service.embed_text(chunk["text"], mode=EmbeddingMode.INDEX),
                 {
                     "text": chunk["text"],
                     "pages": chunk["pages"],
@@ -173,7 +176,7 @@ class QdrantVectorStore(VectorStore):
         """
         Calculates embeddings ONCE, then retrieves from BOTH collections.
         """
-        vectors = self.embedding_service.embed_hybrid(query)
+        vectors = self.embedding_service.embed_hybrid(query, mode=EmbeddingMode.QUERY)
 
         text_results = self._search_text_core(vectors, k_text)
         image_results = self._search_image_core(vectors, k_image)

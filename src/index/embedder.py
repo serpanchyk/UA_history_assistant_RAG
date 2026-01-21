@@ -7,18 +7,25 @@ from sentence_transformers import SentenceTransformer
 from src.logger import logger
 from src.fs_io.images import read_image, cv2_array_to_PIL
 
+from enum import Enum
+
+class EmbeddingMode(Enum):
+    INDEX = "index"
+    QUERY = "query"
+
 
 class EmbeddingService:
     def __init__(self, device: str = None):
         self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
         logger.info(f"Loading embedding models on {self.device}...")
 
+        self.max_tokens = 1024
         # 1. Text Model (BGE-M3)
         self.text_model = BGEM3FlagModel(
             'BAAI/bge-m3',
             device=self.device,
             use_fp16=True,
-            max_tokens= 1024,
+            max_tokens= self.max_tokens,
         )
 
         # 2. Image Model (Multilingual CLIP)
@@ -40,12 +47,12 @@ class EmbeddingService:
             if isinstance(model_output["lexical_weights"], list) \
             else model_output["lexical_weights"]
 
-        sorted_items = sorted(raw_weights.items(), key=lambda item: int(item[0]))
+        sorted_items = sorted((int(k), float(v)) for k, v in raw_weights.items())
         indices, values = zip(*sorted_items) if sorted_items else ([], [])
 
         return {
-            'indices': list(map(int, indices)),
-            'values': list(map(float, values))
+            'indices': indices,
+            'values': values
         }
 
     def embed_text(self, text: str):
@@ -79,14 +86,25 @@ class EmbeddingService:
 
         return embedding.tolist()
 
-    def embed_hybrid(self, text: str, image: Path = None) -> dict[str, list[float]]:
+    def embed_hybrid(
+        self,
+        text: str,
+        image: Path | None = None,
+        mode: EmbeddingMode = EmbeddingMode.QUERY
+    ) -> dict[str, list[float]]:
         """Creates vectors for a multimodal entry (Caption + Image)."""
-        text_vecs = self.embed_text(text)
 
-        if image is None:
+        if mode is EmbeddingMode.INDEX:
+            if image is None:
+                raise ValueError("Image must be provided in INDEX mode.")
+            image_vec = self.embed_image(image)
+        elif mode is EmbeddingMode.QUERY:
             image_vec = self.embed_image(text)
         else:
-            image_vec = self.embed_image(image)
+            raise ValueError(f"Unsupported mode: {mode}")
+
+        text_vecs = self.embed_text(text)
+
 
         return {
             "dense": text_vecs["dense"],
