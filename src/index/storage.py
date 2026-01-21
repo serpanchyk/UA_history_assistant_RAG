@@ -2,16 +2,21 @@ from typing import Any, Iterable, Callable
 import pandas as pd
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
-from llama_cpp import Embedding
 from qdrant_client import QdrantClient, models
-import uuid
+import hashlib
 
 from src.index.embedder import EmbeddingMode
 
 
 class QdrantVectorStore(VectorStore):
-    def __init__(self, embedding_service, client = None):
-        self.client = client if client else QdrantClient("localhost", port=6333)
+    def __init__(
+        self,
+        embedding_service,
+        host: str = "localhost",
+        port: int = 6333,
+        client: QdrantClient | None = None):
+
+        self.client = client or QdrantClient(host=host, port=port)
         self.embedding_service = embedding_service
 
         self.TEXT_COLLECTION = "ukrainian_historical_text"
@@ -67,32 +72,51 @@ class QdrantVectorStore(VectorStore):
                     values=embedding["values"]
                 ) for name, embedding in embeddings.items()}
 
+        content_str = str(sorted(metadata.items()))
+        point_id = hashlib.sha256(content_str.encode()).hexdigest()
+
         return models.PointStruct(
-            id=str(uuid.uuid4()),
+            id=point_id,
             vector=vector,
             payload=metadata
         )
 
 
-    def _process_and_upload(self, collection_name: str, items: Iterable[Any], processor: Callable):
+    def _process_and_upload(
+        self,
+        collection_name: str,
+        items: Iterable[Any],
+        processor: Callable,
+        batch_size: int = 64
+    ):
         """
         Generic helper to loop through items, process them into embeddings/metadata,
         and upload to Qdrant.
         """
-        points = []
+        batch: list = []
 
         for item in items:
             embeddings, metadata = processor(item)
 
             point = self.get_point(embeddings, metadata)
-            points.append(point)
+            batch.append(point)
 
-        self.client.upload_points(
-            collection_name=collection_name,
-            points=points,
-            batch_size=64,
-            wait=True
-        )
+            if len(batch) >= batch_size:
+                self.client.upload_points(
+                    collection_name=collection_name,
+                    points=batch,
+                    batch_size=batch_size,
+                    wait=True
+                )
+
+                batch.clear()
+
+        if batch:
+            self.client.upload_points(
+                collection_name=collection_name,
+                points=batch,
+                wait=True,
+            )
 
     def add_image_entry(self, images_df: pd.DataFrame):
         def image_processor(row):
