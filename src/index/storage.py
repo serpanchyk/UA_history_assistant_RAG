@@ -9,6 +9,8 @@ import uuid
 import json
 
 from src.index.embedder import EmbeddingMode
+from src.utils.texts import get_textbook_source, list_to_interval
+
 
 class QdrantVectorStore(VectorStore):
     def __init__(
@@ -224,15 +226,30 @@ class QdrantVectorStore(VectorStore):
             ]
         }
 
-    def text_documents_to_llm_context(self, docs: list[Document]):
+    @staticmethod
+    def text_documents_to_llm_context(docs: list[Document]):
         chunks = []
         for doc in docs:
             chunks.append(
-                ('[ДОКУМЕНТ]\n',
-                 f'джерело: {doc.metadata['doc_id']}',
-                 f'сторінки: {doc.metadata['pages']}')
-
+                '[ДОКУМЕНТ]\n'
+                 f'Джерело: {get_textbook_source(doc.metadata['doc_id'])}\n'
+                 f'Сторінки: {list_to_interval(doc.metadata['pages'])}\n'
+                 f'Контекст: {doc.page_content}'
             )
+
+        return '\n---\n'.join(chunks)
+
+    @staticmethod
+    def image_documents_to_llm_context(docs: list[Document]):
+        chunks = []
+        for doc in docs:
+            chunks.append(
+                '[ОПИС ЗОБРАЖЕННЯ]\n'
+                 f'Джерело: {get_textbook_source(doc.metadata['doc_id'])}\n'
+                 f'Сторінка: {list_to_interval(doc.metadata['page'])}\n'
+                 f'Опис зображення: {doc.page_content}'
+            )
+        return '\n---\n'.join(chunks)
 
 
     def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> list[Document]:

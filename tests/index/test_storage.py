@@ -1,8 +1,10 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import pandas as pd
+from langchain_core.documents import Document
 from qdrant_client import QdrantClient
 
+from src.utils.texts import get_textbook_source
 from src.index.storage import QdrantVectorStore
 
 
@@ -29,6 +31,53 @@ class TestQdrantStorageReal(unittest.TestCase):
             embedding_service=self.mock_embedder,
             client=self.real_client
         )
+
+        patcher = patch("src.index.storage.get_textbook_source")
+        self.mock_get_source = patcher.start()
+        self.mock_get_source.side_effect = lambda doc_id: f"source_{doc_id}"
+        self.addCleanup(patcher.stop)
+
+    def make_doc(self, metadata: dict, content="dummy content"):
+        return Document(
+            page_content=content,
+            metadata=metadata
+        )
+
+    def test_text_documents_to_llm_context_basic(self):
+        docs = [
+            self.make_doc({'doc_id': 1, 'pages': [1, 2, 3]}, "Content A"),
+            self.make_doc({'doc_id': 2, 'pages': [4, 5]}, "Content B")
+        ]
+
+        result = QdrantVectorStore.text_documents_to_llm_context(docs)
+        self.assertIn("[ДОКУМЕНТ]", result)
+        self.assertIn("Джерело: source_1", result)
+        self.assertIn("Джерело: source_2", result)
+        self.assertIn("Контекст: Content A", result)
+        self.assertIn("Контекст: Content B", result)
+        self.assertIn('Сторінки: 1-3', result)
+        self.assertIn('Сторінки: 4-5', result)
+        self.assertIn("\n---\n", result)
+
+    def test_image_documents_to_llm_context_basic(self):
+        docs = [
+            self.make_doc({'doc_id': 1, 'page': 1}, "bad content"),
+            self.make_doc({'doc_id': 2, 'page': 2}, 'good content')
+        ]
+
+        result = QdrantVectorStore.image_documents_to_llm_context(docs)
+        self.assertIn("[ОПИС ЗОБРАЖЕННЯ]", result)
+        self.assertIn("Джерело: source_1", result)
+        self.assertIn("Джерело: source_2", result)
+        self.assertIn('Сторінка: 1', result)
+        self.assertIn('Сторінка: 2', result)
+        self.assertIn('Опис зображення: bad content', result)
+        self.assertIn('Опис зображення: good content', result)
+        self.assertIn("\n---\n", result)
+
+    def test_empty_document_list_returns_empty_string(self):
+        self.assertEqual(QdrantVectorStore.text_documents_to_llm_context([]), "")
+        self.assertEqual(QdrantVectorStore.image_documents_to_llm_context([]), "")
 
     def test_collections_created_with_correct_config(self):
         """Verifies that collections physically exist in memory with the right schema."""
