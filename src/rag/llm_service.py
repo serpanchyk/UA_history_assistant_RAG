@@ -11,7 +11,17 @@ from src.utils.texts import chat_to_string
 
 
 class LLMService:
+    """
+    Service responsible for handling LLM interactions, including RAG (Retrieval-Augmented Generation),
+    conversation history management, and long-term memory summarization.
+    """
+
     def __init__(self, storage: QdrantVectorStore):
+        """
+        Initializes the LLMService with necessary components and prompt templates.
+        Args:
+            storage (QdrantVectorStore): The vector store instance used for retrieving context.
+        """
         self.model = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash-001"
         )
@@ -29,6 +39,13 @@ class LLMService:
         self.MAX_HISTORY_LEN = 10
 
     def _update_summary(self):
+        """
+        Maintains the size of the conversation history by summarizing older messages.
+
+        Checks if the history length exceeds MAX_HISTORY_LEN. If so, it takes the oldest
+        pair of messages, generates a summary using the LLM, updates the global summary
+        string, and removes the raw messages from the history list.
+        """
 
         if len(self.history) <= self.MAX_HISTORY_LEN:
             return
@@ -48,7 +65,16 @@ class LLMService:
         self.history = messages_to_keep
 
     def _condense_query(self, query: str) -> str:
-        """If history exists, uses it to condence query to be self-sufficient"""
+        """
+        Rewrites the user's query to be standalone if conversation history exists.
+        Uses the most recent conversation history to resolve coreferences (e.g., changing
+        "When was he born?" to "When was Stepan Bandera born?"). If no history exists,
+        returns the original query.
+        Args:
+            query (str): The original user input.
+        Returns:
+            str: The rewritten, standalone query optimized for vector retrieval.
+        """
 
         recent_history = self.history[-4:]
         history_text = chat_to_string(recent_history)
@@ -60,7 +86,15 @@ class LLMService:
         return response.content
 
     def _retrieve_context(self, query: str):
-        """Retrieves data and formats it for the immediate turn only."""
+        """
+        Searches the vector store for relevant documents based on the query.
+        Args:
+            query (str): The search query (usually the condensed version).
+        Returns:
+            dict: A dictionary containing formatted 'text_context' and 'image_context'
+                  strings ready for insertion into the LLM prompt.
+        """
+
         retrieved = self.storage.retrieve_all(query)
 
         return {
@@ -70,6 +104,19 @@ class LLMService:
         }
 
     def generate_response(self, query: str):
+        """
+        Orchestrates the full RAG pipeline to generate a response for the user.
+        Pipeline steps:
+        1. Condense the user's query into a standalone question.
+        2. Retrieve relevant context from the vector store.
+        3. Construct the prompt with system instructions, history summary, raw history, and context.
+        4. Generate the response using the LLM.
+        5. Update the conversation history and trigger summarization if necessary.
+        Args:
+            query (str): The raw input from the user.
+        Returns:
+            str: The generated response from the assistant.
+        """
 
         condensed_query = self._condense_query(query)
 
