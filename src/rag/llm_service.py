@@ -84,7 +84,7 @@ class LLMService:
         messages: list[Any] = [self.system_message]
 
         if self.summary:
-            summary_message = SystemMessage(content=f"Summary of past conversation: {self.summary}")
+            summary_message = SystemMessage(content=f"Короткий виклад минулих розмов: {self.summary}")
             messages.append(summary_message)
 
         messages.extend(self.history)
