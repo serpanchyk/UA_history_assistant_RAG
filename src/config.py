@@ -63,5 +63,10 @@ class Settings(BaseSettings):
     def CHUNKS_DF_PATH(self) -> Path:
         return self.DFS_PATH / "chunks.parquet"
 
+    @computed_field
+    @cached_property
+    def PROMPTS_DIR_PATH(self) -> Path:
+        return self.DATA_DIR / "prompts"
+
 
 settings = Settings()
