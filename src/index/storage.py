@@ -10,7 +10,6 @@ import json
 
 from src.index.embedder import EmbeddingMode
 
-
 class QdrantVectorStore(VectorStore):
     def __init__(
         self,
@@ -220,10 +219,20 @@ class QdrantVectorStore(VectorStore):
             "images": [
                 Document(
                     page_content=p.payload.get("caption", ""),
-                    metadata={"path": p.payload.get("path"), "doc_id": p.payload.get("doc_id")}
+                    metadata={"path": p.payload.get("path"), "doc_id": p.payload.get("doc_id"), 'page': p.payload.get("page")}
                 ) for p in image_results.points
             ]
         }
+
+    def text_documents_to_llm_context(self, docs: list[Document]):
+        chunks = []
+        for doc in docs:
+            chunks.append(
+                ('[ДОКУМЕНТ]\n',
+                 f'джерело: {doc.metadata['doc_id']}',
+                 f'сторінки: {doc.metadata['pages']}')
+
+            )
 
 
     def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> list[Document]:

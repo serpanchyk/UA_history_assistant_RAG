@@ -1,6 +1,9 @@
 import re
 import unicodedata
 
+from src import TEXTBOOKS_DF_PATH
+from src.fs_io.dataframes import read_parquet
+
 MIN_TEXT_LENGTH = 6
 
 ALLOWED_CATEGORIES = {"L", "N", "P", "Z"}
@@ -50,3 +53,30 @@ def block_to_text(block: dict) -> str | None:
 
     return normalized
 
+
+def list_to_interval(lst: list) -> str | None:
+    """Converts list of integers to text: [1, 2, 3] -> '1-3' """
+    try:
+        lst = [int(i) for i in lst]
+    except ValueError:
+        return None
+
+    if len(lst) == 0:
+        return ''
+
+    max_i = max(lst)
+    min_i = min(lst)
+
+    if min_i == max_i:
+        return str(min_i)
+
+    return f'{min_i}-{max_i}'
+
+
+def get_textbook_source(idx: int) -> str | None:
+    """Get textbook source from its id. Returns None if it's invalid."""
+    textbooks_df = read_parquet(TEXTBOOKS_DF_PATH)
+
+    if idx in textbooks_df.index:
+        return textbooks_df.loc[idx, 'source']
+    return None

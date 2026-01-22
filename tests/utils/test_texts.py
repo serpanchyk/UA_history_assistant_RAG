@@ -1,6 +1,6 @@
 import unittest
 
-from src.utils.texts import normalize_text, block_to_text
+from src.utils.texts import normalize_text, block_to_text, list_to_interval, get_textbook_source
 
 class TestNormalizeText(unittest.TestCase):
     """Tests that normalize_text() consistently cleans and normalizes input text."""
@@ -91,6 +91,39 @@ class BlockToTextTest(unittest.TestCase):
                  }
         self.assertIsNone(block_to_text(block))
 
+
+class ListToIntervalTest(unittest.TestCase):
+    """Tests that list_to_interval() converts lists to texts with commas."""
+
+    def test_list_to_interval_with_empty_list(self):
+         """Calls list_to_interval() with an empty list and expects an empty string."""
+
+         self.assertEqual(list_to_interval([]), "")
+
+    def test_list_to_interval_with_strings(self):
+        """Calls list_to_interval() with a string and expects None."""
+
+        self.assertEqual(list_to_interval(["Hello", "World"]), None)
+
+    def test_list_to_interval_with_different_integers(self):
+        """Calls list_to_interval() with different integers and expects an interval."""
+        self.assertEqual(list_to_interval([123, 1, 2, 3,]), '1-123')
+
+    def test_list_to_interval_with_the_same_integer(self):
+        """Calls list_to_interval() with same integers one number."""
+        self.assertEqual(list_to_interval([100, 100, 100]), '100')
+
+
+class GetSourceTest(unittest.TestCase):
+    """Tests that get_source() returns the correct source."""
+
+    def test_get_source_returns_correct_source(self):
+        """Calls get_source() and expects correct source."""
+        self.assertEqual(get_textbook_source(6), "Історія України (поглиблений рівень) : підруч. для 9 класу закл. загал. серед. освіти / [В. С. Власов]. — Київ : Літера ЛТД, 2022. — 336 с. : іл.")
+
+    def test_get_source_returns_none(self):
+        """Calls get_source() with non existing doc id."""
+        self.assertEqual(get_textbook_source(100), None)
 
 if __name__ == "__main__":
     unittest.main()
