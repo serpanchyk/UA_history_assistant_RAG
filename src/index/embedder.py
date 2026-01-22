@@ -15,8 +15,9 @@ class EmbeddingMode(Enum):
 
 
 class EmbeddingService:
-    def __init__(self, device: str = None):
-        self.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+    def __init__(self):
+        gpu_available = torch.cuda.is_available()
+        self.device = 'cuda' if gpu_available else 'cpu'
         logger.info(f"Loading embedding models on {self.device}...")
 
         self.max_tokens = 1024
@@ -24,7 +25,7 @@ class EmbeddingService:
         self.text_model = BGEM3FlagModel(
             'BAAI/bge-m3',
             device=self.device,
-            use_fp16=True,
+            use_fp16=gpu_available,
             max_tokens= self.max_tokens,
         )
 
