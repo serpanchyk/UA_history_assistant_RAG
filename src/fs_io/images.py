@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from src import logger
+from src.logger import logger
 from .filesystem import ensure_dir, ensure_parent_dir
 
 
