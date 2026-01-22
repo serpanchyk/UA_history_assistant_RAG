@@ -18,10 +18,11 @@ load_dotenv()
 class QdrantVectorStore(VectorStore):
     def __init__(
         self,
-        embedding_service
+        embedding_service,
+        client: QdrantClient = None,
     ):
 
-        self.client = QdrantClient(
+        self.client = client if client is not None else  QdrantClient(
             url=os.getenv("QDRANT_URL"),
             api_key=os.getenv("QDRANT_API_KEY")
         )
@@ -236,9 +237,9 @@ class QdrantVectorStore(VectorStore):
         for doc in docs:
             chunks.append(
                 '[ДОКУМЕНТ]\n'
-                 f'Джерело: {get_textbook_source(doc.metadata['doc_id'])}\n'
-                 f'Сторінки: {list_to_interval(doc.metadata['pages'])}\n'
-                 f'Контекст: {doc.page_content}'
+                 f"Джерело: {get_textbook_source(doc.metadata['doc_id'])}\n"
+                 f"Сторінки: {list_to_interval(doc.metadata['pages'])}\n"
+                 f"Контекст: {doc.page_content}"
             )
 
         return '\n---\n'.join(chunks)
@@ -249,9 +250,9 @@ class QdrantVectorStore(VectorStore):
         for doc in docs:
             chunks.append(
                 '[ОПИС ЗОБРАЖЕННЯ]\n'
-                 f'Джерело: {get_textbook_source(doc.metadata['doc_id'])}\n'
-                 f'Сторінка: {list_to_interval(doc.metadata['page'])}\n'
-                 f'Опис зображення: {doc.page_content}'
+                 f"Джерело: {get_textbook_source(doc.metadata['doc_id'])}\n"
+                 f"Сторінка: {list_to_interval(doc.metadata['page'])}\n"
+                 f"Опис зображення: {doc.page_content}"
             )
         return '\n---\n'.join(chunks)
 

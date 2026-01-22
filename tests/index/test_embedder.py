@@ -30,7 +30,7 @@ class TestEmbeddingService(unittest.TestCase):
         self.mock_clip_inst = self.mock_clip_cls.return_value
 
         # Instantiate service
-        self.service = EmbeddingService(device="cpu")
+        self.service = EmbeddingService()
 
     def tearDown(self):
         """Stops all patchers."""
@@ -42,7 +42,7 @@ class TestEmbeddingService(unittest.TestCase):
         self.mock_bge_cls.assert_called_with(
             'BAAI/bge-m3',
             device='cpu',
-            use_fp16=True,
+            use_fp16=False,
             max_tokens=1024
         )
         self.assertEqual(self.service.DENSE_DIM, 1024)
