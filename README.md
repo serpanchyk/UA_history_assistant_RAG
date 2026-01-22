@@ -170,3 +170,17 @@ Track failure modes:
 - **Vector Store:** QDRANT (allows to save embeddings with texts)
 - **Framework:** LangChain (indexing, retrieval, generation)
 - **UI:** Streamlit
+
+
+## Start on you pc:
+Start environment and get dependencies:
+> conda env create -f environment.yml
+> conda activate your_env_name
+
+Start qdrant in docker:
+> docker-compose up -d qdrant
+
+Start rag ingesting and indexing script: 
+> python main.py
+
+
