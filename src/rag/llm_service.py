@@ -1,6 +1,6 @@
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 
 from typing import Any
 
@@ -28,15 +28,16 @@ class LLMService:
 
         self.storage = storage
 
-        self.rag_template = PromptTemplate.from_template(read_text_file(PROMPTS_DIR_PATH / "prompt_template.txt"))
+        self.rag_template = PromptTemplate.from_template(read_text_file(PROMPTS_DIR_PATH / "rag_template.txt"))
         self.condense_template = PromptTemplate.from_template(read_text_file(PROMPTS_DIR_PATH / "condense_template.txt"))
         self.summarize_template = PromptTemplate.from_template(read_text_file(PROMPTS_DIR_PATH / "summarize_template.txt"))
 
-        self.system_message = SystemMessage(content=read_text_file(PROMPTS_DIR_PATH / "system_prompt.txt"))
+        self.system_prompt = SystemMessage(content=read_text_file(PROMPTS_DIR_PATH / "system_prompt.txt"))
 
         self.summary = ''
         self.history = []
         self.MAX_HISTORY_LEN = 10
+        self.SHORT_MEMORY = 4
 
     def _update_summary(self):
         """
@@ -54,7 +55,6 @@ class LLMService:
         messages_to_keep = self.history[2:]
 
         conversation_text = chat_to_string(messages_to_summarize)
-
 
         prompt = self.summarize_template.format(current_summary = self.summary, new_messages=conversation_text)
 
@@ -76,7 +76,7 @@ class LLMService:
             str: The rewritten, standalone query optimized for vector retrieval.
         """
 
-        recent_history = self.history[-4:]
+        recent_history = self.history[-self.SHORT_MEMORY:]
         history_text = chat_to_string(recent_history)
 
         prompt = self.condense_template.format(chat_history=history_text, query=query)
@@ -128,7 +128,7 @@ class LLMService:
             query=condensed_query
         )
 
-        messages: list[Any] = [self.system_message]
+        messages: list[Any] = [self.system_prompt]
 
         if self.summary:
             summary_message = SystemMessage(content=f"Короткий виклад минулих розмов: {self.summary}")

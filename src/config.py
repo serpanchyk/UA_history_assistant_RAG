@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     @computed_field
     @cached_property
     def PROMPTS_DIR_PATH(self) -> Path:
-        return self.DATA_DIR / "prompts"
+        return self.DATA_DIR / "prompt_templates"
 
 
 settings = Settings()
