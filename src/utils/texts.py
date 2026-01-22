@@ -85,3 +85,6 @@ def get_textbook_source(idx: int) -> str | None:
     if idx in textbooks_df.index:
         return textbooks_df.loc[idx, 'source']
     return None
+
+def chat_to_string(chat: list) -> str:
+    return '\n'.join([f'{msg.type}: {msg.content}' for msg in chat])
