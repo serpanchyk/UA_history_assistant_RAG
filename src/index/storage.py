@@ -4,6 +4,8 @@ from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
 from qdrant_client import QdrantClient, models
 
+from dotenv import load_dotenv
+import os
 import hashlib
 import uuid
 import json
@@ -11,16 +13,18 @@ import json
 from src.index.embedder import EmbeddingMode
 from src.utils.texts import get_textbook_source, list_to_interval
 
+load_dotenv()
 
 class QdrantVectorStore(VectorStore):
     def __init__(
         self,
-        embedding_service,
-        host: str = "localhost",
-        port: int = 6333,
-        client: QdrantClient | None = None):
+        embedding_service
+    ):
 
-        self.client = client or QdrantClient(host=host, port=port)
+        self.client = QdrantClient(
+            url=os.getenv("QDRANT_URL"),
+            api_key=os.getenv("QDRANT_API_KEY")
+        )
         self.embedding_service = embedding_service
 
         self.TEXT_COLLECTION = "ukrainian_historical_text"
