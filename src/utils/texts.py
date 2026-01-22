@@ -1,5 +1,7 @@
 import re
 import unicodedata
+from curses.ascii import isdigit
+from typing import Any
 
 from src import TEXTBOOKS_DF_PATH
 from src.fs_io.dataframes import read_parquet
@@ -54,8 +56,11 @@ def block_to_text(block: dict) -> str | None:
     return normalized
 
 
-def list_to_interval(lst: list) -> str | None:
+def list_to_interval(lst: list | Any) -> str | None:
     """Converts list of integers to text: [1, 2, 3] -> '1-3' """
+    if not isinstance(lst, list):
+        lst = [lst]
+
     try:
         lst = [int(i) for i in lst]
     except ValueError:

@@ -113,6 +113,12 @@ class ListToIntervalTest(unittest.TestCase):
         """Calls list_to_interval() with same integers one number."""
         self.assertEqual(list_to_interval([100, 100, 100]), '100')
 
+    def test_list_to_interval_with_the_one_number(self):
+        """Calls list_to_interval() with same integers one number."""
+        self.assertEqual(list_to_interval(10.0), '10')
+        self.assertEqual(list_to_interval(11), '11')
+        self.assertEqual(list_to_interval('12'), '12')
+
 
 class GetSourceTest(unittest.TestCase):
     """Tests that get_source() returns the correct source."""
