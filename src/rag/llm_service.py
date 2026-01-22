@@ -23,6 +23,7 @@ class LLMService:
         self.system_message = SystemMessage(content=read_text_file(PROMPTS_DIR_PATH / "system_prompt.txt"))
 
         self.history = []
+        self.MAX_HISTORY_LEN = 10
 
     def _condense_query(self, query: str) -> str:
         """If history exists, uses it to condence query to be self-sufficient"""
@@ -43,7 +44,7 @@ class LLMService:
 
         return {
             'text_context': QdrantVectorStore.text_documents_to_llm_context(retrieved['texts']),
-            'image_context': QdrantVectorStore.image_documents_to_llm_context(retrieved['images'])
+            'image_context': QdrantVectorStore.image_documents_to_llm_context(retrieved['images']),
             'query': query
         }
 
@@ -66,11 +67,7 @@ class LLMService:
         self.history.append(HumanMessage(content=query))
         self.history.append(AIMessage(content=response_content))
 
+        if len(self.history) > self.MAX_HISTORY_LEN:
+            self.history = self.history[-self.MAX_HISTORY_LEN:]
+
         return response_content
-
-
-
-
-
-
-
