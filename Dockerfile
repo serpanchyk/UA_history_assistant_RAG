@@ -1,8 +1,10 @@
-# Use a slim version of Python for a smaller image size
-FROM python:3.11-slim
+# Use a runtime image (smaller than 'devel') compatible with CUDA 12.x
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
 
-# Install system dependencies required for OpenCV, PyTorch, and pyzbar
+# Install Python and essential system libraries for OpenCV/ZBar
 RUN apt-get update && apt-get install -y \
+    python3.11 \
+    python3-pip \
     libgl1-mesa-glx \
     libglib2.0-0 \
     libzbar0 \
@@ -10,15 +12,13 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy requirements first to leverage Docker cache
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN ln -s /usr/bin/python3.11 /usr/bin/python
 
-# Copy the rest of your source code
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cu121 -r requirements.txt
+
 COPY . .
 
-# Set the Python path so imports like 'src.logger' work correctly
 ENV PYTHONPATH=/app
-
-# Start the ingestion and indexing process
 CMD ["python", "main.py"]
