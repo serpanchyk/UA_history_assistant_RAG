@@ -85,7 +85,12 @@ class QdrantVectorStore(VectorStore):
                     values=embedding["values"]
                 ) for name, embedding in embeddings.items()}
 
-        content_str = json.dumps(metadata, sort_keys=True, ensure_ascii=False)
+        content_str = json.dumps(
+            metadata,
+            sort_keys=True,
+            ensure_ascii=False,
+            default=lambda o: o.tolist() if isinstance(o, np.ndarray) else str(o)
+        )
         hash_bytes = hashlib.sha256(content_str.encode('utf-8')).digest()
 
         point_id = str(uuid.UUID(bytes=hash_bytes[:16]))
