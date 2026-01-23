@@ -60,7 +60,6 @@ class EmbeddingService:
         """Generates 2 vecs for text: dense and sparse embeddings"""
         bge_output = self.text_model.encode(
             text,
-            convert_to_tensor=False,
             return_dense=True,
             return_sparse=True,
             show_progress_bar=True
@@ -86,7 +85,6 @@ class EmbeddingService:
 
         embedding = self.clip_model.encode(
             image_input,
-            convert_to_tensor=False,
             show_progress_bar=True
         )
 
