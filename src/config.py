@@ -25,6 +25,11 @@ class Settings(BaseSettings):
 
     @computed_field
     @cached_property
+    def MODELS_DIR_PATH(self) -> Path:
+        return self.PROJECT_ROOT / "models"
+
+    @computed_field
+    @cached_property
     def DFS_PATH(self) -> Path:
         return self.DATA_DIR / "dfs"
 

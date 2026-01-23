@@ -1,17 +1,14 @@
 from pathlib import Path
 from FlagEmbedding import BGEM3FlagModel
 import torch
-from qdrant_client import models
 from sentence_transformers import SentenceTransformer
-
-from src.logger import logger
-from src.fs_io.images import read_image, cv2_array_to_PIL
 
 from enum import Enum
 import os
 
-os.environ["HF_HOME"] = "/app/models"
-os.environ["SENTENCE_TRANSFORMERS_HOME"] = "/app/models"
+from src.logger import logger
+from src.fs_io.images import read_image, cv2_array_to_PIL
+from src import MODELS_DIR_PATH
 
 class EmbeddingMode(Enum):
     INDEX = "index"
@@ -20,6 +17,12 @@ class EmbeddingMode(Enum):
 
 class EmbeddingService:
     def __init__(self):
+
+        self.cache_dir = MODELS_DIR_PATH
+        os.makedirs(self.cache_dir, exist_ok=True)
+
+        os.environ["HF_HOME"] = str(self.cache_dir)
+        os.environ["SENTENCE_TRANSFORMERS_HOME"] = str(self.cache_dir)
 
         gpu_available = torch.cuda.is_available()
         self.device = 'cuda' if gpu_available else 'cpu'
@@ -32,12 +35,14 @@ class EmbeddingService:
             device=self.device,
             use_fp16=gpu_available,
             max_tokens= self.max_tokens,
+            cache_dir = str(self.cache_dir)
         )
 
         # 2. Image Model (Multilingual CLIP)
         self.clip_model = SentenceTransformer(
             'sentence-transformers/clip-ViT-B-32-multilingual-v1',
-            device=self.device
+            device=self.device,
+            cache_folder = str(self.cache_dir)
         )
 
         self.DENSE_DIM = self.text_model.model.model.config.hidden_size #1024
@@ -67,7 +72,6 @@ class EmbeddingService:
             text,
             return_dense=True,
             return_sparse=True,
-            show_progress_bar=True
         )
 
         dense_vec = bge_output["dense_vecs"].tolist()
@@ -90,7 +94,6 @@ class EmbeddingService:
 
         embedding = self.clip_model.encode(
             image_input,
-            show_progress_bar=True
         )
 
         return embedding.tolist()
