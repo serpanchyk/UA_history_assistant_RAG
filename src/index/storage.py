@@ -11,7 +11,10 @@ import uuid
 import json
 from tqdm import tqdm
 
+from src import CHUNKS_DF_PATH, IMAGES_DF_PATH
+from src.fs_io.dataframes import read_parquet
 from src.index.embedder import EmbeddingMode
+from src.logger import logger
 from src.utils.texts import get_textbook_source, list_to_interval
 
 load_dotenv()
@@ -195,7 +198,7 @@ class QdrantVectorStore(VectorStore):
             collection_name=self.IMAGE_COLLECTION,
             prefetch=[
                 models.Prefetch(
-                    query=vectors["sparse"],
+                    query=models.SparseVector(**vectors["sparse"]),
                     using="sparse",
                     limit=k * 2,
                 ),
@@ -286,3 +289,38 @@ class QdrantVectorStore(VectorStore):
         Required by LangChain's VectorStore abstract class.
         """
         raise NotImplementedError("Use 'add_text_entry' instead.")
+
+    def run(self):
+        logger.info("Starting indexing process...")
+
+        if CHUNKS_DF_PATH.exists():
+            try:
+                logger.info(f"Loading chunks from {CHUNKS_DF_PATH}")
+                chunks_df = read_parquet(CHUNKS_DF_PATH)
+
+                text_chunks = chunks_df.to_dict(orient="records")
+                self.add_text_entry(text_chunks)
+
+                logger.info("Text indexing complete.")
+            except Exception as error:
+                logger.exception("Text indexing failed", exc_info=error)
+
+        else:
+            logger.warning(f"Chunks dataframe {CHUNKS_DF_PATH} does not exist. Skipping text indexing.")
+
+        if IMAGES_DF_PATH.exists():
+            try:
+                logger.info(f"Loading images from {IMAGES_DF_PATH}")
+                images_df = read_parquet(IMAGES_DF_PATH)
+
+                images = images_df.to_dict(orient="records")
+                self.add_image_entry(images)
+
+                logger.info("Image indexing complete.")
+            except Exception as error:
+                logger.exception("Image indexing failed", exc_info=error)
+
+        else:
+            logger.warning(f"Images dataframe {IMAGES_DF_PATH} does not exist. Skipping image indexing.")
+
+        logger.info("Finished indexing process.")
