@@ -21,6 +21,10 @@ formatter = logging.Formatter(
 )
 
 log_file = log_path /  f"logger_{now.day:02d}.log"
+
+logger = logging.getLogger("rag_pipeline")
+logger.setLevel(logging.INFO)
+
 file_handler = TimedRotatingFileHandler(
     log_file,
     when='d',
@@ -29,8 +33,9 @@ file_handler = TimedRotatingFileHandler(
 )
 file_handler.setFormatter(formatter)
 
-logger = logging.getLogger("rag_pipeline")
-logger.setLevel(logging.INFO)
-logger.addHandler(file_handler)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
 
-logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
