@@ -63,6 +63,7 @@ class EmbeddingService:
             convert_to_tensor=False,
             return_dense=True,
             return_sparse=True,
+            show_progress_bar=True
         )
 
         dense_vec = bge_output["dense_vecs"].tolist()
@@ -83,7 +84,11 @@ class EmbeddingService:
         else:
             raise ValueError("Query must be a Path or str representing an image or text.")
 
-        embedding = self.clip_model.encode(image_input, convert_to_tensor=False)
+        embedding = self.clip_model.encode(
+            image_input,
+            convert_to_tensor=False,
+            show_progress_bar=True
+        )
 
         return embedding.tolist()
 
