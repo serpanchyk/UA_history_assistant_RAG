@@ -42,7 +42,7 @@ class TestRunIndexing(unittest.TestCase):
         self.vector_store.add_text_entry.assert_called_once_with(
             chunks_df.to_dict(orient="records")
         )
-        self.vector_store.add_image_entry.assert_called_once_with(images_df)
+        self.vector_store.add_image_entry.assert_called_once_with(images_df.to_dict(orient="records"))
 
     def test_only_chunks_exist(self):
         """When only chunks exist, only text entries should be added to the vector store."""
@@ -68,7 +68,7 @@ class TestRunIndexing(unittest.TestCase):
         run_indexing()
 
         self.vector_store.add_text_entry.assert_not_called()
-        self.vector_store.add_image_entry.assert_called_once_with(images_df)
+        self.vector_store.add_image_entry.assert_called_once_with(images_df.to_dict(orient="records"))
 
     def test_no_files_exist(self):
         """When no source files exist, nothing should be added and no reads performed."""

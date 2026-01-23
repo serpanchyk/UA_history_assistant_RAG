@@ -4,7 +4,6 @@ import pandas as pd
 from langchain_core.documents import Document
 from qdrant_client import QdrantClient
 
-from src.utils.texts import get_textbook_source
 from src.index.storage import QdrantVectorStore
 
 
@@ -95,10 +94,10 @@ class TestQdrantStorageReal(unittest.TestCase):
         Verifies that data uploaded via add_image_entry lands correctly
         in the database with the CORRECT vector names.
         """
-        df = pd.DataFrame([{
+        df = [{
             "caption": "test_img", "path": "p.jpg",
             "doc_id": "d1", "page": 1
-        }])
+        }]
 
         self.store.add_image_entry(df)
 

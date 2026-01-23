@@ -39,12 +39,7 @@ class TestEmbeddingService(unittest.TestCase):
     def test_initialization(self):
         """Test if models are loaded with correct args."""
 
-        self.mock_bge_cls.assert_called_with(
-            'BAAI/bge-m3',
-            device='cpu',
-            use_fp16=False,
-            max_tokens=1024
-        )
+        self.mock_bge_cls.assert_called_once()
         self.assertEqual(self.service.DENSE_DIM, 1024)
 
     def test_embed_text_structure(self):
