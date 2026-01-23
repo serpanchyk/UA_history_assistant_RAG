@@ -52,18 +52,17 @@ class EmbeddingService:
         logger.info("Models loaded successfully.")
 
 
-    def _format_sparse(self, model_output: dict) -> dict[str, list]:
-        """Helper to format sparse output into {indices: [], values: []}."""
-        raw_weights = model_output["lexical_weights"][0] \
-            if isinstance(model_output["lexical_weights"], list) \
-            else model_output["lexical_weights"]
+    def _format_sparse(self, raw_weights: dict) -> dict[str, list]:
+        """Format a single dictionary of lexical weights."""
+        if not raw_weights:
+            return {'indices': [], 'values': []}
 
         sorted_items = sorted((int(k), float(v)) for k, v in raw_weights.items())
-        indices, values = zip(*sorted_items) if sorted_items else ([], [])
+        indices, values = zip(*sorted_items)
 
         return {
-            'indices': indices,
-            'values': values
+            'indices': list(indices),
+            'values': list(values)
         }
 
     def embed_text(self, text: str):
@@ -74,13 +73,12 @@ class EmbeddingService:
             return_sparse=True,
         )
 
-        dense_vec = bge_output["dense_vecs"].tolist()
-
-        sparse_vec = self._format_sparse(bge_output)
+        raw_sparse = bge_output["lexical_weights"]
+        sparse_dict = raw_sparse[0] if isinstance(raw_sparse, list) else raw_sparse
 
         return {
-            "dense": dense_vec,
-            "sparse": sparse_vec,
+            "dense": bge_output["dense_vecs"].tolist(),
+            "sparse": self._format_sparse(sparse_dict),
         }
 
     def embed_image(self, query: Path | str) -> list[float]:
@@ -123,3 +121,35 @@ class EmbeddingService:
             "sparse": text_vecs["sparse"],
             "image": image_vec
         }
+
+    def embed_text_batch(self, texts: list[str]):
+        """Generates dense and sparse embeddings for a batch of strings."""
+        bge_output = self.text_model.encode(
+            texts,
+            return_dense=True,
+            return_sparse=True,
+        )
+
+        dense_vecs = bge_output["dense_vecs"].tolist()
+
+        # Format sparse vectors for each item in the batch
+        return {
+            "dense": dense_vecs,
+            "sparse": [self._format_sparse(vec) for vec in bge_output["lexical_weights"]],
+        }
+
+    def embed_image_batch(self, queries: list[Path | str]) -> list[list[float]]:
+        """Generates vectors for a batch of images or text queries."""
+        inputs = []
+        for q in queries:
+            if isinstance(q, Path):
+                inputs.append(cv2_array_to_PIL(read_image(q)))
+            else:
+                inputs.append(q)
+
+        embeddings = self.clip_model.encode(
+            inputs,
+            batch_size=len(inputs),
+            show_progress_bar=False
+        )
+        return embeddings.tolist()

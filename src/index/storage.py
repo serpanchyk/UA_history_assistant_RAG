@@ -1,5 +1,6 @@
 from typing import Any, Iterable, Callable
-import pandas as pd
+
+
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
 from qdrant_client import QdrantClient, models
@@ -10,6 +11,7 @@ import hashlib
 import uuid
 import json
 from tqdm import tqdm
+import numpy as np
 
 from src import CHUNKS_DF_PATH, IMAGES_DF_PATH
 from src.fs_io.dataframes import read_parquet
@@ -101,82 +103,80 @@ class QdrantVectorStore(VectorStore):
             payload=metadata
         )
 
-
     def _process_and_upload(
-        self,
-        collection_name: str,
-        items: Iterable[Any],
-        processor: Callable,
-        batch_size: int = 64
+            self,
+            collection_name: str,
+            items: list[Any],
+            processor: Callable[[list[Any]], list[models.PointStruct]],
+            batch_size: int = 64
     ):
-        """
-        Generic helper to loop through items, process them into embeddings/metadata,
-        and upload to Qdrant.
-        """
-
-        if items is None:
-            return
-        if len(items) == 0:
+        if not items:
             return
 
-        batch: list = []
+        for i in tqdm(range(0, len(items), batch_size), desc=f"Indexing {collection_name}"):
+            batch_items = items[i: i + batch_size]
 
-        for item in tqdm(items, desc=f"Indexing {collection_name}"):
-            embeddings, metadata = processor(item)
+            points = processor(batch_items)
 
-            point = self.get_point(embeddings, metadata)
-            batch.append(point)
-
-            if len(batch) >= batch_size:
-                self.client.upload_points(
-                    collection_name=collection_name,
-                    points=batch,
-                    batch_size=batch_size,
-                    wait=True
-                )
-
-                batch.clear()
-
-        if batch:
             self.client.upload_points(
                 collection_name=collection_name,
-                points=batch,
-                wait=True,
+                points=points,
+                wait=True
             )
 
     def add_image_entry(self, images: list[dict]):
-        def image_processor(image):
-            return (
-                self.embedding_service.embed_hybrid(text=image['caption'], image=image['path'], mode=EmbeddingMode.INDEX),
-                {
-                    "caption": image['caption'],
-                    "path": image['path'],
-                    "doc_id": image['doc_id'],
-                    "page": image['page']
+        def batch_image_processor(batch_list):
+            paths = [img['path'] for img in batch_list]
+            captions = [img['caption'] for img in batch_list]
+
+            text_embeddings = self.embedding_service.embed_text_batch(captions)
+            image_embeddings = self.embedding_service.embed_image_batch(paths)
+
+            points = []
+            for i, item in enumerate(batch_list):
+                embeddings = {
+                    "dense": text_embeddings["dense"][i],
+                    "sparse": text_embeddings["sparse"][i],
+                    "image": image_embeddings[i]
                 }
-            )
+                metadata = {
+                    "caption": item['caption'],
+                    "path": str(item['path']),
+                    "doc_id": item['doc_id'],
+                    "page": item['page']
+                }
+                points.append(self.get_point(embeddings, metadata))
+            return points
 
         self._process_and_upload(
             collection_name=self.IMAGE_COLLECTION,
             items=images,
-            processor=image_processor,
+            processor=batch_image_processor,
         )
 
     def add_text_entry(self, text_chunks: list[dict]):
-        def text_processor(row):
-            return (
-                self.embedding_service.embed_text(row["text"]),
-                {
-                    "text": row["text"],
-                    "pages": row["pages"],
-                    "doc_id": row["doc_id"],
+        def batch_text_processor(batch_list):
+            texts = [row["text"] for row in batch_list]
+            embeddings_batch = self.embedding_service.embed_text_batch(texts)
+
+            points = []
+            for i, item in enumerate(batch_list):
+                embeddings = {
+                    "dense": embeddings_batch["dense"][i],
+                    "sparse": embeddings_batch["sparse"][i],
                 }
-            )
+                metadata = {
+                    "text": item["text"],
+                    "pages": item["pages"],
+                    "doc_id": item["doc_id"],
+                }
+                points.append(self.get_point(embeddings, metadata))
+            return points
 
         self._process_and_upload(
             collection_name=self.TEXT_COLLECTION,
             items=text_chunks,
-            processor=text_processor,
+            processor=batch_text_processor,
         )
 
     def _search_text_core(self, vectors: dict[str, Any], k: int):
