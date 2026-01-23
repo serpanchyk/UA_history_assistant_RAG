@@ -9,6 +9,7 @@ import os
 import hashlib
 import uuid
 import json
+from tqdm import tqdm
 
 from src.index.embedder import EmbeddingMode
 from src.utils.texts import get_textbook_source, list_to_interval
@@ -106,7 +107,7 @@ class QdrantVectorStore(VectorStore):
         """
         batch: list = []
 
-        for item in items:
+        for item in tqdm(items, desc=f"Indexing {collection_name}"):
             embeddings, metadata = processor(item)
 
             point = self.get_point(embeddings, metadata)
@@ -129,39 +130,40 @@ class QdrantVectorStore(VectorStore):
                 wait=True,
             )
 
-    def add_image_entry(self, images_df: pd.DataFrame):
-        def image_processor(row):
+    def add_image_entry(self, images: pd.DataFrame):
+        def image_processor(image):
+            caption = str(image['caption']) if image['caption'] is not None else 'Зображення без опису'
             return (
-                self.embedding_service.embed_hybrid(text=row.caption, image=row.path, mode=EmbeddingMode.INDEX),
+                self.embedding_service.embed_hybrid(text=caption, image=image['path'], mode=EmbeddingMode.INDEX),
                 {
-                    "caption": row.caption,
-                    "path": str(row.path),
-                    "doc_id": row.doc_id,
-                    "page": row.page,
+                    "caption": caption,
+                    "path": str(image['path']),
+                    "doc_id": int(image['doc_id']),
+                    "page": int(image['page'])
                 }
             )
 
         self._process_and_upload(
             collection_name=self.IMAGE_COLLECTION,
-            items=images_df.itertuples(index=False),
-            processor=image_processor
+            items=images,
+            processor=image_processor,
         )
 
     def add_text_entry(self, text_chunks: list[dict]):
-        def text_processor(chunk):
+        def text_processor(row):
             return (
-                self.embedding_service.embed_text(chunk["text"]),
+                self.embedding_service.embed_text(row["text"]),
                 {
-                    "text": chunk["text"],
-                    "pages": chunk["pages"],
-                    "doc_id": chunk["doc_id"],
+                    "text": str(row["text"]),
+                    "pages": row["pages"].tolist(),
+                    "doc_id": int(row["doc_id"]),
                 }
             )
 
         self._process_and_upload(
             collection_name=self.TEXT_COLLECTION,
             items=text_chunks,
-            processor=text_processor
+            processor=text_processor,
         )
 
     def _search_text_core(self, vectors: dict[str, Any], k: int):

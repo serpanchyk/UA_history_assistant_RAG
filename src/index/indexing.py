@@ -32,7 +32,9 @@ def run_indexing():
             logger.info(f"Loading images from {IMAGES_DF_PATH}")
             images_df = read_parquet(IMAGES_DF_PATH)
 
-            vector_store.add_image_entry(images_df)
+            images = images_df.to_dict(orient="records")
+            vector_store.add_image_entry(images)
+
             logger.info("Image indexing complete.")
         except Exception as error:
             logger.exception("Image indexing failed", exc_info=error)
