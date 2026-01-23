@@ -8,6 +8,10 @@ from src.logger import logger
 from src.fs_io.images import read_image, cv2_array_to_PIL
 
 from enum import Enum
+import os
+
+os.environ["HF_HOME"] = "/app/models"
+os.environ["SENTENCE_TRANSFORMERS_HOME"] = "/app/models"
 
 class EmbeddingMode(Enum):
     INDEX = "index"
@@ -16,6 +20,7 @@ class EmbeddingMode(Enum):
 
 class EmbeddingService:
     def __init__(self):
+
         gpu_available = torch.cuda.is_available()
         self.device = 'cuda' if gpu_available else 'cpu'
         logger.info(f"Loading embedding models on {self.device}...")
