@@ -1,6 +1,5 @@
 import re
 import unicodedata
-from curses.ascii import isdigit
 from typing import Any
 
 from src import TEXTBOOKS_DF_PATH

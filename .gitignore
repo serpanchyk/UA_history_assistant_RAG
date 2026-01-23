@@ -4,7 +4,7 @@ __pycache__/
 models/
 *.gguf
 *.png
-images/
+data/images/
 qdrant_storage/
 log/
 .env
