@@ -68,6 +68,9 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
             continue
 
         caption = find_closest_text(tuple(image_row.bbox), texts_df)
+
+        if caption is None:
+            caption = 'Зображення без опису'
         df_images.at[idx, 'caption'] = caption
 
     return df_images

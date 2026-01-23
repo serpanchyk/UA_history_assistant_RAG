@@ -150,7 +150,7 @@ class QdrantVectorStore(VectorStore):
     def add_text_entry(self, text_chunks: list[dict]):
         def text_processor(chunk):
             return (
-                self.embedding_service.embed_text(chunk["text"], mode=EmbeddingMode.INDEX),
+                self.embedding_service.embed_text(chunk["text"]),
                 {
                     "text": chunk["text"],
                     "pages": chunk["pages"],
