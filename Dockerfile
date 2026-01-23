@@ -16,7 +16,7 @@ RUN ln -s /usr/bin/python3.11 /usr/bin/python
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cu121 -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
