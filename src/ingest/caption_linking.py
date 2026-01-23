@@ -62,7 +62,7 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
         pd.DataFrame: Images DataFrame with 'caption' column added.
     """
 
-    df_images['caption'] = None
+    df_images['caption'] = 'Зображення без опису'
     text_groups = df_text_blocks.groupby(['doc_id', 'page'])
     for idx in tqdm(range(len(df_images)), desc="Linking captions"):
         image_row = df_images.iloc[idx]
