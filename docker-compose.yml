@@ -1,9 +1,10 @@
 services:
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: qdrant_ua_history
-    ports:
-      - "6333:6333"
+  app:
+    build: .
+    container_name: ua_history_assistant
+    env_file:
+      - .env
     volumes:
-      - ./qdrant_storage:/qdrant/storage
-    restart: always
+      - ./data:/app/data
+      - ./log:/app/log
+      - ./models:/root/.cache/huggingface
