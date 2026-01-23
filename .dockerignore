@@ -1,0 +1,7 @@
+models/
+log/
+__pycache__/
+.git/
+.idea/
+venv/
+anaconda3/
