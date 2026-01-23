@@ -38,6 +38,9 @@ def find_closest_text(image_bbox: tuple, texts_df: pd.DataFrame) -> str | None:
     Returns:
         str | None: Text of the closest text block, or None if no text is available.
     """
+    if texts_df is None:
+        return None
+
     if texts_df.empty:
         return None
 
@@ -64,8 +67,6 @@ def link_image_to_text(df_images: pd.DataFrame, df_text_blocks: pd.DataFrame) ->
     for idx in tqdm(range(len(df_images)), desc="Linking captions"):
         image_row = df_images.iloc[idx]
         texts_df = find_texts_on_same_page(image_row, text_groups)
-        if texts_df is None:
-            continue
 
         caption = find_closest_text(tuple(image_row.bbox), texts_df)
 

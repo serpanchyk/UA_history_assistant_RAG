@@ -99,6 +99,29 @@ class TestLinkImageToText(unittest.TestCase):
         self.assertIn("caption", result.columns)
         self.assertEqual(result.loc[0, "caption"], "caption")
 
+    def test_no_caption(self):
+        """Verify that if no caption exists, caption is set to default caption."""
+        df_images = pd.DataFrame({
+            "doc_id": [1],
+            "page": [1],
+            "bbox": [(0, 0, 4, 4)],
+            'path': 'img.png',
+        })
+
+        df_texts = pd.DataFrame({
+            "doc_id": [2, 2],
+            "page": [2, 2],
+            "bbox": [(0, 0, 5, 5), (20, 20, 30, 30)],
+            "text": ["caption on other page", "other caption on other page"],
+        })
+
+        result = link_image_to_text(df_images, df_texts)
+
+        self.assertIn("caption", result.columns)
+        self.assertEqual(result.loc[0, "caption"], "Зображення без опису")
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
