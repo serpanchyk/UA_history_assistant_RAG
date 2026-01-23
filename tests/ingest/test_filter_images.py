@@ -51,7 +51,6 @@ class TestFilterImages(unittest.TestCase):
         """filter_images should move invalid images and return only valid images in a dataframe."""
         images = ["clear.png", "qrcode.png", "ui.png", "gradient.png", "real_image.png"]
 
-        index_of_valid_image = 4
         count_of_valid_images = 1
 
         df_images = pd.DataFrame({
@@ -65,7 +64,7 @@ class TestFilterImages(unittest.TestCase):
         self.assertEqual(mock_move_image.call_count, len(images) - count_of_valid_images)
         self.assertEqual(len(filtered_images), count_of_valid_images)
         self.assertEqual(
-            filtered_images.at[index_of_valid_image, "path"],
+            filtered_images.at[0, "path"],
             str(TEST_DIR / "real_image.png")
         )
 
