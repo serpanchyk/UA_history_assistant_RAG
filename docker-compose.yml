@@ -7,7 +7,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./log:/app/log
-      - ./models:app/models
+      - ./models:/app/models
     deploy:
       resources:
         reservations:
