@@ -143,7 +143,7 @@ class TestQdrantStorageReal(unittest.TestCase):
         empty_df = pd.DataFrame(columns=["caption", "path", "doc_id", "page"])
 
         try:
-            self.store.add_image_entry(empty_df)
+            self.store.add_image_entry(empty_df.to_dict(orient="records"))
             self.store.add_text_entry([])
         except Exception as e:
             self.fail(f"Adding empty data raised exception: {e}")
