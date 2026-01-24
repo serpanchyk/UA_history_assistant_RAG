@@ -2,6 +2,8 @@ import re
 import unicodedata
 from typing import Any
 
+import numpy as np
+
 from src import TEXTBOOKS_DF_PATH
 from src.fs_io.dataframes import read_parquet
 
@@ -87,3 +89,18 @@ def get_textbook_source(idx: int) -> str | None:
 
 def chat_to_string(chat: list) -> str:
     return '\n'.join([f'{msg.type}: {msg.content}' for msg in chat])
+
+
+def sanitize(obj):
+    """Cast np objects to native python"""
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, (np.integer, np.int64)):
+        return int(obj)
+    if isinstance(obj, (np.floating, np.float64)):
+        return float(obj)
+    if isinstance(obj, dict):
+        return {sanitize(k): sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [sanitize(i) for i in obj]
+    return obj

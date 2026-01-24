@@ -17,7 +17,7 @@ from src import CHUNKS_DF_PATH, IMAGES_DF_PATH
 from src.fs_io.dataframes import read_parquet
 from src.index.embedder import EmbeddingMode
 from src.logger import logger
-from src.utils.texts import get_textbook_source, list_to_interval
+from src.utils.texts import get_textbook_source, list_to_interval, sanitize
 
 load_dotenv()
 
@@ -82,25 +82,31 @@ class QdrantVectorStore(VectorStore):
                 )
 
     def get_point(self, embeddings: dict, metadata: dict) -> models.PointStruct:
-        vector = {name: embedding if 'sparse' not in name else models.SparseVector(
-                    indices=embedding["indices"],
-                    values=embedding["values"]
-                ) for name, embedding in embeddings.items()}
+        vector = {}
+        for name, embedding in embeddings.items():
+            if 'sparse' in name:
+                vector[name] = models.SparseVector(
+                    indices=list(embedding["indices"]),
+                    values=list(embedding["values"])
+                )
+            else:
+                vector[name] = embedding.tolist() if hasattr(embedding, 'tolist') else embedding
+
+        clean_metadata = sanitize(metadata)
 
         content_str = json.dumps(
-            metadata,
+            clean_metadata,
             sort_keys=True,
             ensure_ascii=False,
-            default=lambda o: o.tolist() if isinstance(o, np.ndarray) else str(o)
         )
-        hash_bytes = hashlib.sha256(content_str.encode('utf-8')).digest()
 
+        hash_bytes = hashlib.sha256(content_str.encode('utf-8')).digest()
         point_id = str(uuid.UUID(bytes=hash_bytes[:16]))
 
         return models.PointStruct(
             id=point_id,
             vector=vector,
-            payload=metadata
+            payload=clean_metadata
         )
 
     def _process_and_upload(
