@@ -8,6 +8,7 @@ from src.fs_io.filesystem import read_text_file
 from src import PROMPTS_DIR_PATH
 from src.index.storage import QdrantVectorStore
 from src.utils.texts import chat_to_string
+from src.logger import logger
 
 
 class LLMService:
@@ -97,11 +98,15 @@ class LLMService:
 
         retrieved = self.storage.retrieve_all(query)
 
-        return {
+        logger.info('Retrieved context for llm: %s', retrieved)
+
+        context = {
             'text_context': QdrantVectorStore.text_documents_to_llm_context(retrieved['texts']),
             'image_context': QdrantVectorStore.image_documents_to_llm_context(retrieved['images']),
             'query': query
         }
+
+        return context
 
     def generate_response(self, query: str):
         """
