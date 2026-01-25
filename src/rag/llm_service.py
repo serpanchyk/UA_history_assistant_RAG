@@ -108,7 +108,7 @@ class LLMService:
 
         return context
 
-    def generate_response(self, query: str):
+    def generate_response(self, query: str) -> str:
         """
         Orchestrates the full RAG pipeline to generate a response for the user.
         Pipeline steps:
@@ -142,11 +142,18 @@ class LLMService:
         messages.extend(self.history)
         messages.append(HumanMessage(content=formatted_prompt))
 
-        response_content = self.model.invoke(messages).content
+        full_response = []
+        for chunk in self.model.stream(messages):
+            if not chunk.content:
+                continue
+
+            token = chunk.content
+            full_response.append(token)
+            yield token
+
+        response_content = ''.join(full_response)
 
         self.history.append(HumanMessage(content=query))
         self.history.append(AIMessage(content=response_content))
 
         self._update_summary()
-
-        return response_content
