@@ -282,7 +282,9 @@ class QdrantVectorStore(VectorStore):
     def images_for_ui(docs: list[Document]) -> list[np.ndarray]:
         images = []
         for doc in docs:
-            images.append(read_image(doc.metadata["path"]))
+            image = read_image(doc.metadata["path"])
+            if image is not None:
+                images.append(image)
         return images
 
     def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> list[Document]:

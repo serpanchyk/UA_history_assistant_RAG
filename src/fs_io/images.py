@@ -8,7 +8,7 @@ from src.logger import logger
 from .filesystem import ensure_dir, ensure_parent_dir
 
 
-def read_image(path: Path) -> np.ndarray:
+def read_image(path: Path) -> np.ndarray | None:
     """
     Reads an image file and returns its bytes.
     Args:
@@ -20,7 +20,7 @@ def read_image(path: Path) -> np.ndarray:
     """
     if not path.exists():
         logger.error(f"Image not found: {path}")
-        raise FileNotFoundError(f"Image not found: {path}")
+        return None
 
     return cv2.imread(str(path))
 
