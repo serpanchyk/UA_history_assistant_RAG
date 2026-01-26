@@ -121,7 +121,7 @@ class LLMService:
 
         return context
 
-    def generate_response(self, query: str, context: str) -> str:
+    def generate_response(self, query: str, context: RagContext) -> str:
         """
         Orchestrates the full RAG pipeline to generate a response for the user.
         Pipeline steps:
@@ -130,14 +130,15 @@ class LLMService:
         3. Update the conversation history and trigger summarization if necessary.
         Args:
             query (str): The raw input from the user.
+            context (RagContext): The context to use for generating the response.
         Returns:
             str: The generated response from the assistant.
         """
 
         formatted_prompt = self.rag_template.format(
-            text_context=context['text_context'],
-            image_context=context['image_context'],
-            query=context['condensed_query']
+            text_context=context.text_context,
+            image_context=context.image_context,
+            query=context.condensed_query
         )
 
         messages: list[Any] = [self.system_prompt]
