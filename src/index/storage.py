@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Iterable, Callable
 
 
@@ -282,7 +283,7 @@ class QdrantVectorStore(VectorStore):
     def images_for_ui(docs: list[Document]) -> list[np.ndarray]:
         images = []
         for doc in docs:
-            image = read_image(doc.metadata["path"])
+            image = read_image(Path(doc.metadata["path"]))
             if image is not None:
                 images.append(image)
         return images
