@@ -15,6 +15,7 @@ import numpy as np
 
 from src import CHUNKS_DF_PATH, IMAGES_DF_PATH
 from src.fs_io.dataframes import read_parquet
+from src.fs_io.images import read_image
 from src.index.embedder import EmbeddingMode
 from src.logger import logger
 from src.utils.texts import get_textbook_source, list_to_interval, sanitize
@@ -277,6 +278,12 @@ class QdrantVectorStore(VectorStore):
             )
         return '\n---\n'.join(chunks)
 
+    @staticmethod
+    def images_for_ui(docs: list[Document]) -> list[np.ndarray]:
+        images = []
+        for doc in docs:
+            images.append(read_image(doc.metadata["path"]))
+        return images
 
     def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> list[Document]:
         """
@@ -284,8 +291,6 @@ class QdrantVectorStore(VectorStore):
         Uses the shared optimized pipeline internally.
         """
         return self.retrieve_all(query, k, **kwargs)["texts"]
-
-        # ... inside QdrantVectorStore class ...
 
     @classmethod
     def from_texts(cls, texts, embedding, metadatas=None, **kwargs):

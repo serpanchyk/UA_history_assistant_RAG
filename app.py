@@ -27,15 +27,23 @@ for msg in chat.messages:
     with st.chat_message(msg.role):
         st.markdown(msg.content)
 
+        for image in msg.images:
+            st.image(image)
+
 query = st.chat_input("Питайте, що цікавить")
 
 if query:
     chat.add_user_message(query)
 
+    context = llm_service.retrieve(query)
+
     with st.chat_message('assistant'):
         full_response = st.write_stream(
-            llm_service.generate_response(query)
+            llm_service.generate_response(query, context)
         )
 
-    chat.add_assistant_message(full_response)
+        for image in context.images:
+            st.image(image)
+
+    chat.add_assistant_message(full_response, context.images)
 

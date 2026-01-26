@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+
+import numpy as np
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
@@ -10,6 +13,13 @@ from src.index.storage import QdrantVectorStore
 from src.utils.texts import chat_to_string
 from src.logger import logger
 
+
+@dataclass
+class RagContext:
+    text_context: str
+    image_context: str
+    images: list[np.ndarray]
+    condensed_query: str
 
 class LLMService:
     """
@@ -86,51 +96,48 @@ class LLMService:
 
         return response.content
 
-    def _retrieve_context(self, query: str):
+    def retrieve(self, query: str) -> RagContext:
         """
-        Searches the vector store for relevant documents based on the query.
+        Condenses query for better retrieval.
+        Searches the vector store for relevant documents based on the condensed query.
         Args:
             query (str): The search query (usually the condensed version).
         Returns:
             dict: A dictionary containing formatted 'text_context' and 'image_context'
                   strings ready for insertion into the LLM prompt.
         """
+        condensed_query = self._condense_query(query)
 
-        retrieved = self.storage.retrieve_all(query)
+        retrieved = self.storage.retrieve_all(condensed_query)
 
         logger.info('Retrieved context for llm: %s', retrieved)
 
-        context = {
-            'text_context': QdrantVectorStore.text_documents_to_llm_context(retrieved['texts']),
-            'image_context': QdrantVectorStore.image_documents_to_llm_context(retrieved['images']),
-            'query': query
-        }
+        context = RagContext(
+            text_context = QdrantVectorStore.text_documents_to_llm_context(retrieved['texts']),
+            image_context =  QdrantVectorStore.image_documents_to_llm_context(retrieved['images']),
+            images = QdrantVectorStore.images_for_ui(retrieved['images']),
+            condensed_query=condensed_query
+        )
 
         return context
 
-    def generate_response(self, query: str) -> str:
+    def generate_response(self, query: str, context: str) -> str:
         """
         Orchestrates the full RAG pipeline to generate a response for the user.
         Pipeline steps:
-        1. Condense the user's query into a standalone question.
-        2. Retrieve relevant context from the vector store.
-        3. Construct the prompt with system instructions, history summary, raw history, and context.
-        4. Generate the response using the LLM.
-        5. Update the conversation history and trigger summarization if necessary.
+        1. Construct the prompt with system instructions, history summary, raw history, and context.
+        2. Generate the response using the LLM.
+        3. Update the conversation history and trigger summarization if necessary.
         Args:
             query (str): The raw input from the user.
         Returns:
             str: The generated response from the assistant.
         """
 
-        condensed_query = self._condense_query(query)
-
-        context = self._retrieve_context(condensed_query)
-
         formatted_prompt = self.rag_template.format(
             text_context=context['text_context'],
             image_context=context['image_context'],
-            query=condensed_query
+            query=context['condensed_query']
         )
 
         messages: list[Any] = [self.system_prompt]
