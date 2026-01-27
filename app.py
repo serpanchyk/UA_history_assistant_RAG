@@ -1,49 +1,42 @@
-import streamlit as st
+import gradio as gr
 
+from src import IMAGES_DIR_PATH
 from src.index.embedder import EmbeddingService
 from src.index.storage import QdrantVectorStore
 from src.rag.llm_service import LLMService
-from src.ui.chat import ChatState
 
 embedder = EmbeddingService()
 storage = QdrantVectorStore(embedder)
-
 llm_service = LLMService(storage)
 
-st.set_page_config(
-    page_title="UA History Assistant",
-    page_icon="🤖",
-    layout="centered",
+def predict(message, history):
+    """
+    Core logic handler for the chat.
+    Gradio handles the 'history' state automatically, so we don't need the custom ChatState class
+    for basic UI retention, though you can still use it internally if it manages token limits/logic.
+    """
+
+    context = llm_service.retrieve(message)
+
+    partial_response = ""
+    generator = llm_service.generate_response(message, context)
+
+    for chunk in generator:
+        partial_response += chunk
+        yield partial_response
+
+    if hasattr(context, 'images') and context.images:
+        for image_path in context.images:
+            partial_response += f"\n\n![]({image_path})"
+        yield partial_response
+
+
+demo = gr.ChatInterface(
+    fn=predict,
+    title="ШІ-помічник з вивчення Історії України 🤖",
+    examples=["Розкажи про Київську Русь", "Коли була прийнята незалежність?"]
 )
 
-st.title("ШІ-помічник з вивчення Історії України")
-
-if "chat" not in st.session_state:
-    st.session_state["chat"] = ChatState()
-
-chat = st.session_state.chat
-
-for msg in chat.messages:
-    with st.chat_message(msg.role):
-        st.markdown(msg.content)
-
-        for image in msg.images:
-            st.image(image)
-
-query = st.chat_input("Питайте, що цікавить")
-
-if query:
-    chat.add_user_message(query)
-
-    context = llm_service.retrieve(query)
-
-    with st.chat_message('assistant'):
-        full_response = st.write_stream(
-            llm_service.generate_response(query, context)
-        )
-
-        for image in context.images:
-            st.image(image)
-
-    chat.add_assistant_message(full_response, context.images)
+if __name__ == "__main__":
+    demo.launch(allowed_paths=[IMAGES_DIR_PATH])
 
