@@ -1,11 +1,8 @@
-from pathlib import Path
-from typing import Any, Iterable, Callable
-
-
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
 from qdrant_client import QdrantClient, models
 
+from typing import Any, Callable
 from dotenv import load_dotenv
 import os
 import hashlib
@@ -16,7 +13,6 @@ import numpy as np
 
 from src import CHUNKS_DF_PATH, IMAGES_DF_PATH
 from src.fs_io.dataframes import read_parquet
-from src.fs_io.images import read_image
 from src.index.embedder import EmbeddingMode
 from src.logger import logger
 from src.utils.texts import get_textbook_source, list_to_interval, sanitize
