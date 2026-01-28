@@ -1,3 +1,8 @@
+import base64
+import urllib
+from pathlib import Path
+
+import cv2
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
 from qdrant_client import QdrantClient, models
@@ -13,6 +18,7 @@ import numpy as np
 
 from src import CHUNKS_DF_PATH, IMAGES_DF_PATH
 from src.fs_io.dataframes import read_parquet
+from src.fs_io.images import read_image
 from src.index.embedder import EmbeddingMode
 from src.logger import logger
 from src.utils.texts import get_textbook_source, list_to_interval, sanitize
@@ -276,15 +282,46 @@ class QdrantVectorStore(VectorStore):
         return '\n---\n'.join(chunks)
 
     @staticmethod
-    def images_for_ui(docs: list[Document]) -> list[np.ndarray]:
-        images = ''
+    def images_for_ui(docs: list[Document]) -> str:
+        """
+        Reads images using read_image(), converts numpy arrays to Base64 HTML.
+        This embeds the image data directly into the chat response.
+        """
+        html_content = ""
 
         for doc in docs:
-            image_path = doc.metadata['path']
-            clean_path = image_path.replace("\\", "/")
-            images += f"\n\n![](/file={clean_path})"
+            path_str = doc.metadata.get('path')
+            if not path_str:
+                continue
 
-        return images
+            image_path = Path(path_str)
+
+            # 1. Use your existing helper to get the numpy array
+            # read_image handles the existence check and logging internally
+            image_array = read_image(image_path)
+
+            if image_array is not None:
+                try:
+                    success, buffer = cv2.imencode('.png', image_array)
+
+                    if success:
+                        b64_data = base64.b64encode(buffer).decode('utf-8')
+
+                        caption = doc.page_content.replace('"', '&quot;')
+
+                        html_content += (
+                            f'<br>'
+                            f'<div style="margin: 15px 0;">'
+                            f'<img src="data:image/png;base64,{b64_data}" '
+                            f'alt="{caption}" '
+                            f'style="max-width: 100%; max-height: 400px; border-radius: 8px;">'
+                            f'<p style="font-size: 0.8em; color: gray; margin-top: 5px;"><em>{caption}</em></p>'
+                            f'</div>'
+                        )
+                except Exception as e:
+                    logger.error(f"Failed to encode image {image_path}: {e}")
+
+        return html_content
 
     def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> list[Document]:
         """
