@@ -2,9 +2,10 @@ from dataclasses import dataclass
 
 import numpy as np
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import AzureChatOpenAI
 from langchain_core.prompts import PromptTemplate
 
+import os
 from typing import Any
 
 from src.fs_io.filesystem import read_text_file
@@ -33,8 +34,9 @@ class LLMService:
         Args:
             storage (QdrantVectorStore): The vector store instance used for retrieving context.
         """
-        self.model = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-001"
+        self.model = AzureChatOpenAI(
+            azure_deployment=os.getenv('AZURE_OPENAI_DEPLOYMENT'),
+            api_version=os.getenv('AZURE_OPENAI_API_VERSION')
         )
 
         self.storage = storage
