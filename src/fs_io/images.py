@@ -91,4 +91,3 @@ def delete_images(images_path: Path, force: bool = False) -> None:
 
     shutil.rmtree(images_path)
     logger.info(f"Deleted all images in directory: {images_path}")
-

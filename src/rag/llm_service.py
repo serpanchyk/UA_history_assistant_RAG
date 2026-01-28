@@ -49,8 +49,11 @@ class LLMService:
 
         self.summary = ''
         self.history = []
+        # all numbers should be even
         self.MAX_HISTORY_LEN = 10
         self.SHORT_MEMORY = 4
+        # should be less than max history len
+        self.CHUNK_SIZE = 4
 
     def _update_summary(self):
         """
@@ -61,21 +64,24 @@ class LLMService:
         string, and removes the raw messages from the history list.
         """
 
-        if len(self.history) <= self.MAX_HISTORY_LEN:
-            return
+        to_remove = ((len(self.history) - self.MAX_HISTORY_LEN) // 2 * 2) + self.CHUNK_SIZE
 
-        messages_to_summarize = self.history[:2]
-        messages_to_keep = self.history[2:]
+        messages_to_summarize = self.history[:to_remove]
+        self.history = self.history[to_remove:]
 
         conversation_text = chat_to_string(messages_to_summarize)
 
-        prompt = self.summarize_template.format(current_summary = self.summary, new_messages=conversation_text)
+        prompt = self.summarize_template.format(
+            current_summary = self.summary,
+            new_messages=conversation_text
+        )
 
-        response = self.model.invoke([HumanMessage(content=prompt)])
-
-        self.summary = response.content
-
-        self.history = messages_to_keep
+        try:
+            response = self.model.invoke([HumanMessage(content=prompt)])
+            if response.content.strip():
+                self.summary = response.content.strip()
+        except Exception as e:
+            logger.error(f"Summary update failed: {e}")
 
     def _condense_query(self, query: str) -> str:
         """
