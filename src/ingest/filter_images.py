@@ -89,11 +89,12 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
     """
     keep_indices = []
 
-    for idx, image_row in enumerate(tqdm(
-            df_images.itertuples(),
+    for idx in tqdm(
+            df_images.index,
             total=len(df_images),
             desc="Filtering images"
-    )):
+    ):
+        image_row = df_images.iloc[idx]
         image_path = Path(image_row.path)
         image = read_image(image_path)
 
@@ -113,4 +114,4 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
             )
             move_image(image_path, REJECTED_IMAGES_DIR_PATH)
 
-    return df_images.iloc[keep_indices]
+    return df_images.iloc[keep_indices].reset_index(drop=True)

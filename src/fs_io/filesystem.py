@@ -31,3 +31,22 @@ def remove_file(file_path: Path) -> None:
         logger.info(f"Removed file: {file_path}")
     else:
         logger.warning(f"File not found, cannot remove: {file_path}")
+
+def read_text_file(file_path: Path) -> str:
+    """
+    Reads the contents of a text file.
+    Args:
+        file_path (Path): Path to the text file.
+    Returns:
+        str: Contents of the text file.
+    Raises:
+        FileNotFoundError: If the file does not exist.
+    """
+    if not file_path.exists():
+        logger.error(f"Text file not found: {file_path}")
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    with file_path.open('r', encoding='utf-8') as file:
+        content = file.read()
+        logger.debug(f"Read text file: {file_path}")
+        return content

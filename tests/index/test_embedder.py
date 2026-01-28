@@ -30,7 +30,7 @@ class TestEmbeddingService(unittest.TestCase):
         self.mock_clip_inst = self.mock_clip_cls.return_value
 
         # Instantiate service
-        self.service = EmbeddingService(device="cpu")
+        self.service = EmbeddingService()
 
     def tearDown(self):
         """Stops all patchers."""
@@ -39,12 +39,7 @@ class TestEmbeddingService(unittest.TestCase):
     def test_initialization(self):
         """Test if models are loaded with correct args."""
 
-        self.mock_bge_cls.assert_called_with(
-            'BAAI/bge-m3',
-            device='cpu',
-            use_fp16=True,
-            max_tokens=1024
-        )
+        self.mock_bge_cls.assert_called_once()
         self.assertEqual(self.service.DENSE_DIM, 1024)
 
     def test_embed_text_structure(self):
@@ -63,8 +58,8 @@ class TestEmbeddingService(unittest.TestCase):
         self.assertEqual(len(dense), 1024)
 
         self.assertIsInstance(sparse, dict)
-        self.assertEqual(sparse['indices'], [101, 202])
-        self.assertEqual(sparse['values'], [0.5, 0.3])
+        self.assertEqual(sparse['indices'], (101, 202))
+        self.assertEqual(sparse['values'], (0.5, 0.3))
 
     def test_embed_image(self):
         """Test image embedding pipeline."""

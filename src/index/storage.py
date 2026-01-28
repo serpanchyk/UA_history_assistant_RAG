@@ -1,14 +1,35 @@
-from typing import Any, Iterable, Callable
-import pandas as pd
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStore
 from qdrant_client import QdrantClient, models
-import uuid
 
+from typing import Any, Callable
+from dotenv import load_dotenv
+import os
+import hashlib
+import uuid
+import json
+from tqdm import tqdm
+import numpy as np
+
+from src import CHUNKS_DF_PATH, IMAGES_DF_PATH
+from src.fs_io.dataframes import read_parquet
+from src.index.embedder import EmbeddingMode
+from src.logger import logger
+from src.utils.texts import get_textbook_source, list_to_interval, sanitize
+
+load_dotenv()
 
 class QdrantVectorStore(VectorStore):
-    def __init__(self, embedding_service, client = None):
-        self.client = client if client else QdrantClient("localhost", port=6333)
+    def __init__(
+        self,
+        embedding_service,
+        client: QdrantClient = None,
+    ):
+
+        self.client = client if client is not None else  QdrantClient(
+            url=os.getenv("QDRANT_URL"),
+            api_key=os.getenv("QDRANT_API_KEY")
+        )
         self.embedding_service = embedding_service
 
         self.TEXT_COLLECTION = "ukrainian_historical_text"
@@ -59,71 +80,107 @@ class QdrantVectorStore(VectorStore):
                 )
 
     def get_point(self, embeddings: dict, metadata: dict) -> models.PointStruct:
-        vector = {name: embedding if 'sparse' not in name else models.SparseVector(
-                    indices=embedding["indices"],
-                    values=embedding["values"]
-                ) for name, embedding in embeddings.items()}
+        vector = {}
+        for name, embedding in embeddings.items():
+            if 'sparse' in name:
+                vector[name] = models.SparseVector(
+                    indices=list(embedding["indices"]),
+                    values=list(embedding["values"])
+                )
+            else:
+                vector[name] = embedding.tolist() if hasattr(embedding, 'tolist') else embedding
+
+        clean_metadata = sanitize(metadata)
+
+        content_str = json.dumps(
+            clean_metadata,
+            sort_keys=True,
+            ensure_ascii=False,
+        )
+
+        hash_bytes = hashlib.sha256(content_str.encode('utf-8')).digest()
+        point_id = str(uuid.UUID(bytes=hash_bytes[:16]))
 
         return models.PointStruct(
-            id=str(uuid.uuid4()),
+            id=point_id,
             vector=vector,
-            payload=metadata
+            payload=clean_metadata
         )
 
+    def _process_and_upload(
+            self,
+            collection_name: str,
+            items: list[Any],
+            processor: Callable[[list[Any]], list[models.PointStruct]],
+            batch_size: int = 64
+    ):
+        if not items:
+            return
 
-    def _process_and_upload(self, collection_name: str, items: Iterable[Any], processor: Callable):
-        """
-        Generic helper to loop through items, process them into embeddings/metadata,
-        and upload to Qdrant.
-        """
-        points = []
+        for i in tqdm(range(0, len(items), batch_size), desc=f"Indexing {collection_name}"):
+            batch_items = items[i: i + batch_size]
 
-        for item in items:
-            embeddings, metadata = processor(item)
+            points = processor(batch_items)
 
-            point = self.get_point(embeddings, metadata)
-            points.append(point)
-
-        self.client.upload_points(
-            collection_name=collection_name,
-            points=points,
-            batch_size=64,
-            wait=True
-        )
-
-    def add_image_entry(self, images_df: pd.DataFrame):
-        def image_processor(row):
-            return (
-                self.embedding_service.embed_hybrid(text=row.caption, image=row.path),
-                {
-                    "caption": row.caption,
-                    "path": str(row.path),
-                    "doc_id": row.doc_id,
-                    "page": row.page,
-                }
+            self.client.upload_points(
+                collection_name=collection_name,
+                points=points,
+                wait=True
             )
+
+    def add_image_entry(self, images: list[dict]):
+        def batch_image_processor(batch_list):
+            paths = [img['path'] for img in batch_list]
+            captions = [img['caption'] for img in batch_list]
+
+            text_embeddings = self.embedding_service.embed_text_batch(captions)
+            image_embeddings = self.embedding_service.embed_image_batch(paths)
+
+            points = []
+            for i, item in enumerate(batch_list):
+                embeddings = {
+                    "dense": text_embeddings["dense"][i],
+                    "sparse": text_embeddings["sparse"][i],
+                    "image": image_embeddings[i]
+                }
+                metadata = {
+                    "caption": item['caption'],
+                    "path": str(item['path']),
+                    "doc_id": item['doc_id'],
+                    "page": item['page']
+                }
+                points.append(self.get_point(embeddings, metadata))
+            return points
 
         self._process_and_upload(
             collection_name=self.IMAGE_COLLECTION,
-            items=images_df.itertuples(index=False),
-            processor=image_processor
+            items=images,
+            processor=batch_image_processor,
         )
 
     def add_text_entry(self, text_chunks: list[dict]):
-        def text_processor(chunk):
-            return (
-                self.embedding_service.embed_text(chunk["text"]),
-                {
-                    "text": chunk["text"],
-                    "pages": chunk["pages"],
-                    "doc_id": chunk["doc_id"],
+        def batch_text_processor(batch_list):
+            texts = [row["text"] for row in batch_list]
+            embeddings_batch = self.embedding_service.embed_text_batch(texts)
+
+            points = []
+            for i, item in enumerate(batch_list):
+                embeddings = {
+                    "dense": embeddings_batch["dense"][i],
+                    "sparse": embeddings_batch["sparse"][i],
                 }
-            )
+                metadata = {
+                    "text": item["text"],
+                    "pages": item["pages"],
+                    "doc_id": item["doc_id"],
+                }
+                points.append(self.get_point(embeddings, metadata))
+            return points
 
         self._process_and_upload(
             collection_name=self.TEXT_COLLECTION,
             items=text_chunks,
-            processor=text_processor
+            processor=batch_text_processor,
         )
 
     def _search_text_core(self, vectors: dict[str, Any], k: int):
@@ -150,7 +207,7 @@ class QdrantVectorStore(VectorStore):
             collection_name=self.IMAGE_COLLECTION,
             prefetch=[
                 models.Prefetch(
-                    query=vectors["sparse"],
+                    query=models.SparseVector(**vectors["sparse"]),
                     using="sparse",
                     limit=k * 2,
                 ),
@@ -173,7 +230,7 @@ class QdrantVectorStore(VectorStore):
         """
         Calculates embeddings ONCE, then retrieves from BOTH collections.
         """
-        vectors = self.embedding_service.embed_hybrid(query)
+        vectors = self.embedding_service.embed_hybrid(query, mode=EmbeddingMode.QUERY)
 
         text_results = self._search_text_core(vectors, k_text)
         image_results = self._search_image_core(vectors, k_image)
@@ -188,11 +245,46 @@ class QdrantVectorStore(VectorStore):
             "images": [
                 Document(
                     page_content=p.payload.get("caption", ""),
-                    metadata={"path": p.payload.get("path"), "doc_id": p.payload.get("doc_id")}
+                    metadata={"path": p.payload.get("path"), "doc_id": p.payload.get("doc_id"), 'page': p.payload.get("page")}
                 ) for p in image_results.points
             ]
         }
 
+    @staticmethod
+    def text_documents_to_llm_context(docs: list[Document]):
+        chunks = []
+        for doc in docs:
+            chunks.append(
+                '[ДОКУМЕНТ]\n'
+                 f"Джерело: {get_textbook_source(doc.metadata['doc_id'])}\n"
+                 f"Сторінки: {list_to_interval(doc.metadata['pages'])}\n"
+                 f"Контекст: {doc.page_content}"
+            )
+
+        return '\n---\n'.join(chunks)
+
+    @staticmethod
+    def image_documents_to_llm_context(docs: list[Document]):
+        chunks = []
+        for doc in docs:
+            chunks.append(
+                '[ОПИС ЗОБРАЖЕННЯ]\n'
+                 f"Джерело: {get_textbook_source(doc.metadata['doc_id'])}\n"
+                 f"Сторінка: {list_to_interval(doc.metadata['page'])}\n"
+                 f"Опис зображення: {doc.page_content}"
+            )
+        return '\n---\n'.join(chunks)
+
+    @staticmethod
+    def images_for_ui(docs: list[Document]) -> list[np.ndarray]:
+        images = ''
+
+        for doc in docs:
+            image_path = doc.metadata['path']
+            clean_path = image_path.replace("\\", "/")
+            images += f"\n\n![](/file={clean_path})"
+
+        return images
 
     def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> list[Document]:
         """
@@ -200,8 +292,6 @@ class QdrantVectorStore(VectorStore):
         Uses the shared optimized pipeline internally.
         """
         return self.retrieve_all(query, k, **kwargs)["texts"]
-
-        # ... inside QdrantVectorStore class ...
 
     @classmethod
     def from_texts(cls, texts, embedding, metadatas=None, **kwargs):
@@ -216,3 +306,38 @@ class QdrantVectorStore(VectorStore):
         Required by LangChain's VectorStore abstract class.
         """
         raise NotImplementedError("Use 'add_text_entry' instead.")
+
+    def run(self):
+        logger.info("Starting indexing process...")
+
+        if CHUNKS_DF_PATH.exists():
+            try:
+                logger.info(f"Loading chunks from {CHUNKS_DF_PATH}")
+                chunks_df = read_parquet(CHUNKS_DF_PATH)
+
+                text_chunks = chunks_df.to_dict(orient="records")
+                self.add_text_entry(text_chunks)
+
+                logger.info("Text indexing complete.")
+            except Exception as error:
+                logger.exception("Text indexing failed", exc_info=error)
+
+        else:
+            logger.warning(f"Chunks dataframe {CHUNKS_DF_PATH} does not exist. Skipping text indexing.")
+
+        if IMAGES_DF_PATH.exists():
+            try:
+                logger.info(f"Loading images from {IMAGES_DF_PATH}")
+                images_df = read_parquet(IMAGES_DF_PATH)
+
+                images = images_df.to_dict(orient="records")
+                self.add_image_entry(images)
+
+                logger.info("Image indexing complete.")
+            except Exception as error:
+                logger.exception("Image indexing failed", exc_info=error)
+
+        else:
+            logger.warning(f"Images dataframe {IMAGES_DF_PATH} does not exist. Skipping image indexing.")
+
+        logger.info("Finished indexing process.")

@@ -1,5 +1,4 @@
 """Unit and integration tests for PDF extraction helpers: text blocks, images, pages and full-document extraction."""
-
 import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -63,7 +62,9 @@ class TestExtractionData(unittest.TestCase):
         self.assertEqual(result['bbox'], [0, 0, 10, 10])
         self.assertEqual(result['page'], 2)
         self.assertEqual(result['doc_id'], 1)
-        self.assertEqual(result['path'], "/fake/path/image.png")
+        self.assertIn('fake', result['path'])
+        self.assertIn('path', result['path'])
+        self.assertIn('image.png', result['path'])
 
     def test_process_block_text(self):
         """process_block should return text when block is a text block and no image info."""

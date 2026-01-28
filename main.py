@@ -1,8 +1,10 @@
-from src.index.indexing import run_indexing
 from src.ingest.ingesting import PDFIngestor
+from src.index.embedder import EmbeddingService
+from src.index.storage import QdrantVectorStore
+from src.rag.llm_service import LLMService
 
 if __name__ == "__main__":
-    ingestor = PDFIngestor()
-    ingestor.run(filter_images_flag=True, link_images_flag=True)
+    pass
 
-    run_indexing()
+
+

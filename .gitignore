@@ -3,8 +3,8 @@ __pycache__/
 .idea/
 models/
 *.gguf
-*.png
-images/
+data/images/
 qdrant_storage/
 log/
+.env
 *.log

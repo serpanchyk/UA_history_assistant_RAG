@@ -4,34 +4,10 @@ import unittest
 
 import pandas as pd
 
-from src.ingest.sorting_texts import bbox_sort, sort_texts
-
+from src.ingest.sorting_texts import sort_texts
 
 class TestSortingTexts(unittest.TestCase):
     """Confirm bbox-based sorting (y desc, x asc), grouping by doc/page, and index resetting behavior."""
-
-    def bbox_sort_y_by_desc_x_by_asc(self):
-        """(Non-run) example: bbox_sort should sort by y desc then x asc to produce visual reading order."""
-        df = pd.DataFrame({
-            "text": ["A", "B", "C", "D"],
-            "x": [50, 10, 30, 20],
-            "y": [100, 100, 200, 200],
-        })
-
-        sorted_df = bbox_sort(df)
-
-        self.assertEqual(list(sorted_df['text']), ['D', 'C', 'B', 'A'])
-
-    def test_bbox_sort_resets_index(self):
-        """bbox_sort should reset DataFrame index to a sequential 0..n-1 after sorting."""
-        df = pd.DataFrame({
-            'x': [1, 2],
-            'y': [3, 4]
-        }, index = [10, 20])
-
-        sorted_df = bbox_sort(df)
-
-        self.assertEqual(list(sorted_df.index), [0, 1])
 
     def test_sort_texts_single_doc_single_page(self):
         """sort_texts should order texts on a single page by their bbox-derived centroid order."""

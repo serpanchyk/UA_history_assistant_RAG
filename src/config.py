@@ -25,6 +25,11 @@ class Settings(BaseSettings):
 
     @computed_field
     @cached_property
+    def MODELS_DIR_PATH(self) -> Path:
+        return self.PROJECT_ROOT / "models"
+
+    @computed_field
+    @cached_property
     def DFS_PATH(self) -> Path:
         return self.DATA_DIR / "dfs"
 
@@ -62,6 +67,11 @@ class Settings(BaseSettings):
     @cached_property
     def CHUNKS_DF_PATH(self) -> Path:
         return self.DFS_PATH / "chunks.parquet"
+
+    @computed_field
+    @cached_property
+    def PROMPTS_DIR_PATH(self) -> Path:
+        return self.DATA_DIR / "prompt_templates"
 
 
 settings = Settings()

@@ -1,0 +1,17 @@
+flagembedding
+langchain_core
+langchain_google_genai
+numpy
+opencv_python
+pandas
+Pillow
+pydantic
+pydantic_settings
+pymupdf
+python-dotenv
+pyzbar
+qdrant_client
+sentence_transformers
+streamlit
+torch
+tqdm
