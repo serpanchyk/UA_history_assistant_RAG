@@ -94,13 +94,15 @@ def chat_to_string(chat: list) -> str:
 def sanitize(obj):
     """Cast np objects to native python"""
     if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    if isinstance(obj, (np.integer, np.int64)):
+        return sanitize(obj.tolist())
+    if isinstance(obj, (np.integer, np.int64, np.int32)):
         return int(obj)
-    if isinstance(obj, (np.floating, np.float64)):
+    if isinstance(obj, (np.floating, np.float64, np.float32)):
         return float(obj)
+    if isinstance(obj, np.bool_):
+        return bool(obj)
     if isinstance(obj, dict):
-        return {sanitize(k): sanitize(v) for k, v in obj.items()}
+        return {str(sanitize(k)): sanitize(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
         return [sanitize(i) for i in obj]
     return obj
