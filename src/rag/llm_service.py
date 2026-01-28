@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-import numpy as np
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_openai import AzureChatOpenAI
 from langchain_core.prompts import PromptTemplate
@@ -19,7 +18,7 @@ from src.logger import logger
 class RagContext:
     text_context: str
     image_context: str
-    images: list[np.ndarray]
+    images: str
     condensed_query: str
 
 class LLMService:
@@ -35,8 +34,14 @@ class LLMService:
             storage (QdrantVectorStore): The vector store instance used for retrieving context.
         """
         self.model = AzureChatOpenAI(
-            azure_deployment=os.getenv('AZURE_OPENAI_DEPLOYMENT'),
+            azure_deployment="gpt-4o",
             api_version=os.getenv('AZURE_OPENAI_API_VERSION')
+        )
+
+        self.cheap_model = AzureChatOpenAI(
+            azure_deployment="gpt-5-mini",
+            api_version=os.getenv('AZURE_OPENAI_API_VERSION'),
+            temperature=0
         )
 
         self.storage = storage
@@ -77,7 +82,7 @@ class LLMService:
         )
 
         try:
-            response = self.model.invoke([HumanMessage(content=prompt)])
+            response = self.cheap_model.invoke([HumanMessage(content=prompt)])
             if response.content.strip():
                 self.summary = response.content.strip()
         except Exception as e:
@@ -100,7 +105,7 @@ class LLMService:
 
         prompt = self.condense_template.format(chat_history=history_text, query=query)
 
-        response = self.model.invoke([HumanMessage(content=prompt)])
+        response = self.cheap_model.invoke([HumanMessage(content=prompt)])
 
         return response.content
 
@@ -116,7 +121,11 @@ class LLMService:
         """
         condensed_query = self._condense_query(query)
 
-        retrieved = self.storage.retrieve_all(condensed_query)
+        retrieved = self.storage.retrieve_all(
+            condensed_query,
+            k_text=3,
+            k_image=3
+        )
 
         logger.info('Retrieved context for llm: %s', retrieved)
 
@@ -166,6 +175,10 @@ class LLMService:
             token = chunk.content
             full_response.append(token)
             yield token
+
+        if context.images:
+            full_response.append(context.images)
+            yield context.images
 
         response_content = ''.join(full_response)
 
