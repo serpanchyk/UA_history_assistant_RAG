@@ -25,18 +25,21 @@ def predict(message, history):
         partial_response += chunk
         yield partial_response
 
-    if hasattr(context, 'images') and context.images:
-        for image_path in context.images:
-            partial_response += f"\n\n![]({image_path})"
+    if context.images:
+        partial_response += context.images
         yield partial_response
 
 
 demo = gr.ChatInterface(
     fn=predict,
     title="ШІ-помічник з вивчення Історії України 🤖",
-    examples=["Розкажи про Київську Русь", "Коли була прийнята незалежність?"]
+    examples=[
+        "Поштовхом до розгортання в XVI ст. братського руху на українських землях було",
+        "Собор святого Юри є прикладом архітектури"
+    ],
+    fill_height=True
 )
 
 if __name__ == "__main__":
-    demo.launch(allowed_paths=[IMAGES_DIR_PATH])
+    demo.launch(allowed_paths=[str(IMAGES_DIR_PATH)])
 

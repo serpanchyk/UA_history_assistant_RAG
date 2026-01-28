@@ -282,8 +282,11 @@ class QdrantVectorStore(VectorStore):
     @staticmethod
     def images_for_ui(docs: list[Document]) -> list[np.ndarray]:
         images = ''
+
         for doc in docs:
-            images += f"\n\n![]({doc.metadata['path']})"
+            image_path = doc.metadata['path']
+            clean_path = image_path.replace("\\", "/")
+            images += f"\n\n![](/file={clean_path})"
 
         return images
 
