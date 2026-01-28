@@ -25,10 +25,6 @@ def predict(message, history):
         partial_response += chunk
         yield partial_response
 
-    if context.images:
-        partial_response += context.images
-        yield partial_response
-
 
 demo = gr.ChatInterface(
     fn=predict,
@@ -41,5 +37,5 @@ demo = gr.ChatInterface(
 )
 
 if __name__ == "__main__":
-    demo.launch(allowed_paths=[str(IMAGES_DIR_PATH)])
+    demo.launch()
 
