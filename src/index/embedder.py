@@ -1,4 +1,6 @@
 from pathlib import Path
+
+import numpy as np
 from FlagEmbedding import BGEM3FlagModel
 import torch
 from sentence_transformers import SentenceTransformer
@@ -81,10 +83,10 @@ class EmbeddingService:
             "sparse": self._format_sparse(sparse_dict),
         }
 
-    def embed_image(self, query: Path | str) -> list[float]:
+    def embed_image(self, query: np.ndarray | str) -> list[float]:
         """Generates vector (512 dim) for image if Path were given or for text if str were given."""
-        if isinstance(query, Path):
-            image_input = cv2_array_to_PIL(read_image(query))
+        if isinstance(query, np.ndarray):
+            image_input = cv2_array_to_PIL(query)
         elif isinstance(query, str):
             image_input = query
         else:
@@ -99,14 +101,15 @@ class EmbeddingService:
     def embed_hybrid(
         self,
         text: str,
-        image: Path | None = None,
+        image_path: Path | None = None,
         mode: EmbeddingMode = EmbeddingMode.QUERY
     ) -> dict[str, list[float]]:
         """Creates vectors for a multimodal entry (Caption + Image)."""
 
         if mode is EmbeddingMode.INDEX:
-            if image is None:
+            if image_path is None:
                 raise ValueError("Image must be provided in INDEX mode.")
+            image = read_image(image_path)
             image_vec = self.embed_image(image)
         elif mode is EmbeddingMode.QUERY:
             image_vec = self.embed_image(text)
