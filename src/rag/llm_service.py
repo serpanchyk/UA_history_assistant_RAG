@@ -41,7 +41,6 @@ class LLMService:
         self.cheap_model = AzureChatOpenAI(
             azure_deployment="gpt-5-mini",
             api_version=os.getenv('AZURE_OPENAI_API_VERSION'),
-            temperature=0
         )
 
         self.storage = storage
@@ -68,6 +67,9 @@ class LLMService:
         pair of messages, generates a summary using the LLM, updates the global summary
         string, and removes the raw messages from the history list.
         """
+
+        if len(self.history) <= self.MAX_HISTORY_LEN:
+            return
 
         to_remove = ((len(self.history) - self.MAX_HISTORY_LEN) // 2 * 2) + self.CHUNK_SIZE
 
