@@ -295,9 +295,6 @@ class QdrantVectorStore(VectorStore):
                 continue
 
             image_path = Path(path_str)
-
-            # 1. Use your existing helper to get the numpy array
-            # read_image handles the existence check and logging internally
             image_array = read_image(image_path)
 
             if image_array is not None:
