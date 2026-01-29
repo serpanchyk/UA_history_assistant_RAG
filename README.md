@@ -163,13 +163,13 @@ Track failure modes:
 
 ## Initial Technical Choices
 
-- **LLM:** MamayLM-Gemma-3-4B-IT-v1.0.Q4_K_S (1st place in Ukrainian Language Leaderboard. Optimised version for my pc, 5 tokens/second)
+- **LLM:** gpt-4o and gpt-5 for aux
 - **Embeddings:**
   - Text: multilingual model — 'BAAI/bge-m3' (keyword embeddings could be great addition for getting better matches)
   - Images: OpenAI CLIP
 - **Vector Store:** QDRANT (allows to save embeddings with texts)
 - **Framework:** LangChain (indexing, retrieval, generation)
-- **UI:** Streamlit
+- **UI:** Gradio
 
 
 ## Start on you pc:

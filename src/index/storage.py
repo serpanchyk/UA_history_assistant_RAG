@@ -118,7 +118,7 @@ class QdrantVectorStore(VectorStore):
             collection_name: str,
             items: list[Any],
             processor: Callable[[list[Any]], list[models.PointStruct]],
-            batch_size: int = 128
+            batch_size: int = 64
     ):
         if not items:
             return

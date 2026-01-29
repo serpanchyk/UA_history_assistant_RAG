@@ -1,18 +1,18 @@
-Твоя мета: Створити стислий (3-5 речень) виклад розмови для пам'яті асистента.
+Your goal: Create a concise summary (3-5 sentences) of the conversation for the assistant's memory.
 
-Інструкції:
-1. Об'єднай поточний виклад та нові повідомлення в один логічний абзац.
-2. Збережи: ключові імена, дати, терміни, суть запитань та відповідей.
-3. Ігноруй: привітання, подяки, емоції, технічні деталі.
+Instructions:
+1. Merge the current summary and new messages into a single logical paragraph.
+2. Retain: key names, dates, terms, the essence of questions and answers.
+3. Ignore: greetings, gratitude, emotions, technical details.
 
-Поточний виклад:
+Current Summary:
 """
 {current_summary}
 """
 
-Нові повідомлення:
+New Messages:
 """
 {new_messages}
 """
 
-Оновлений виклад:
+Updated Summary (in Ukrainian):

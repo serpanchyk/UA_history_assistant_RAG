@@ -1,14 +1,16 @@
-Використовуй наведений нижче контекст для надання відповіді.
+Use the context provided below to answer the user's query.
 
-### Текстовий контекст
+### Text Context
 {text_context}
 
-### Описи зображень
+### Image Descriptions
 {image_context}
 
 ---
-### Запит користувача
+### User Query
 {query}
+
+**IMPORTANT:** Provide the final answer strictly in **Ukrainian**.
 
 
 

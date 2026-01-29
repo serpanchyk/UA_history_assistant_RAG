@@ -1,18 +1,18 @@
-Твоя мета: Перефразувати повідомлення користувача у повне, самодостатнє питання для пошуку в базі знань.
+Your goal: Rephrase the user's message into a complete, standalone question for searching the knowledge base.
 
-Інструкції:
-1. Використовуй історію чату, щоб замінити займенники (він, вона, це, тоді) на конкретні імена, дати чи назви подій.
-2. Не відповідай на питання. Тільки перефразуй.
-3. Якщо запит зрозумілий без історії — поверни його без змін.
+Instructions:
+1. Use the chat history to replace pronouns (he, she, it, then) with specific names, dates, or event titles.
+2. Do not answer the question. Only rephrase it.
+3. If the query is clear without history, return it unchanged.
 
-Історія чату:
+Chat History:
 """
 {chat_history}
 """
 
-Повідомлення користувача:
+User Message:
 """
 {query}
 """
 
-Перефразоване питання:
+Rephrased Question (in Ukrainian):

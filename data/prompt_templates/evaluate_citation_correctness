@@ -1,0 +1,19 @@
+You are a strict evaluator of academic citations.
+Task: Check if the citations in the Answer are supported by the Context.
+
+Context (with sources):
+{context}
+
+Answer:
+{answer}
+
+Criteria:
+1. Does the answer explicitly cite a source (e.g., "Джерело:", "Source:")?
+2. Does the text attributed to that source ACTUALLY exist in the provided Context under that source name?
+
+- If citation is missing but required -> 0
+- If citation exists but the fact is NOT in the context source -> 0
+- If citation exists and supports the fact -> 1
+- If no specific citation format is used but facts are grounded -> 1 (Soft pass)
+
+Return ONLY the digit: 0 or 1.
