@@ -4,8 +4,10 @@ from src.index.storage import QdrantVectorStore
 from src.rag.llm_service import LLMService
 
 if __name__ == "__main__":
+    ingester = PDFIngestor()
 
-    pass
+    ingester.run()
+
 
 
 

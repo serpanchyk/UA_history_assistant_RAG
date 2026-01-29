@@ -27,7 +27,6 @@ def extract_text_block(block: dict, doc_id: int, page_number: int) -> dict | Non
     text = block_to_text(block)
 
     if text is None:
-        logger.info(f"Text block from doc {doc_id} on page {page_number} was empty or smaller than minimum block size")
         return None
 
     block_info = {

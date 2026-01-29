@@ -118,7 +118,7 @@ class QdrantVectorStore(VectorStore):
             collection_name: str,
             items: list[Any],
             processor: Callable[[list[Any]], list[models.PointStruct]],
-            batch_size: int = 64
+            batch_size: int = 128
     ):
         if not items:
             return
@@ -179,6 +179,7 @@ class QdrantVectorStore(VectorStore):
                     "text": item["text"],
                     "pages": item["pages"],
                     "doc_id": item["doc_id"],
+                    "id": item["id"]
                 }
                 points.append(self.get_point(embeddings, metadata))
             return points
@@ -245,7 +246,7 @@ class QdrantVectorStore(VectorStore):
             "texts": [
                 Document(
                     page_content=p.payload.get("text", ""),
-                    metadata={"doc_id": p.payload.get("doc_id"), "pages": p.payload.get("pages")}
+                    metadata={"doc_id": p.payload.get("doc_id"), "pages": p.payload.get("pages"), "id": p.payload.get("id")}
                 ) for p in text_results.points
             ],
             "images": [

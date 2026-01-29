@@ -7,7 +7,7 @@ import numpy as np
 from src import TEXTBOOKS_DF_PATH
 from src.fs_io.dataframes import read_parquet
 
-MIN_TEXT_LENGTH = 6
+MIN_TEXT_LENGTH = 10
 
 ALLOWED_CATEGORIES = {"L", "N", "P", "Z"}
 
@@ -54,6 +54,9 @@ def block_to_text(block: dict) -> str | None:
     normalized = normalize_text(text)
 
     if len(normalized) < MIN_TEXT_LENGTH:
+        return None
+
+    if not any(c.isalpha() for c in normalized):
         return None
 
     return normalized

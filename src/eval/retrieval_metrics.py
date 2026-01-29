@@ -22,14 +22,14 @@ def parse_results(results: list[Any], is_image: bool) -> list[str]:
             path_str = payload.get('path', '')
             parsed.append(Path(path_str).name)
         else:
-            parsed.append(payload.get('text', ''))
+            parsed.append(payload.get('id', ''))
     return parsed
 
 
 def get_expected_value(row: pd.Series, is_image: bool) -> str:
     if is_image:
         return Path(row['expected_image_path']).name
-    return row['ground_truth_text']
+    return row['expected_id']
 
 
 def process_single_query(

@@ -103,15 +103,6 @@ def filter_images(df_images: pd.DataFrame) -> pd.DataFrame:
         if result.is_valid:
             keep_indices.append(idx)
         else:
-            logger.info(
-                "Reject image",
-                extra={
-                    "path": str(image_path),
-                    "reason": result.reasons,
-                    "doc_id": image_row.doc_id,
-                    "page": image_row.page,
-                }
-            )
             move_image(image_path, REJECTED_IMAGES_DIR_PATH)
 
     return df_images.iloc[keep_indices].reset_index(drop=True)
