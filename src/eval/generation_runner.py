@@ -6,11 +6,10 @@ from src.index.embedder import EmbeddingService
 from src.eval.generation_metrics import (
     evaluate_faithfulness,
     evaluate_citation_correctness,
-    evaluate_answer_relevance,  # <--- NEW
-    evaluate_semantic_similarity  # <--- NEW
+    evaluate_answer_relevance,
+    evaluate_semantic_similarity
 )
 from src.rag.llm_service import LLMService
-
 
 def run_generation_eval(
         llm_service: LLMService,
