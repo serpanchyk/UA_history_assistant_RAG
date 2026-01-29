@@ -83,12 +83,14 @@ class LLMService:
             new_messages=conversation_text
         )
 
+        logger.info("Model started updating summary")
         try:
             response = self.cheap_model.invoke([HumanMessage(content=prompt)])
             if response.content.strip():
                 self.summary = response.content.strip()
         except Exception as e:
             logger.error(f"Summary update failed: {e}")
+        logger.info("Model ended updating summary")
 
     def _condense_query(self, query: str) -> str:
         """
@@ -107,7 +109,9 @@ class LLMService:
 
         prompt = self.condense_template.format(chat_history=history_text, query=query)
 
+        logger.info("Model started condensing query")
         response = self.cheap_model.invoke([HumanMessage(content=prompt)])
+        logger.info("Model ended condensing query")
 
         return response.content
 
@@ -125,8 +129,8 @@ class LLMService:
 
         retrieved = self.storage.retrieve_all(
             condensed_query,
-            k_text=3,
-            k_image=3
+            k_text=1,
+            k_image=1
         )
 
         logger.info('Retrieved context for llm: %s', retrieved)
@@ -169,6 +173,7 @@ class LLMService:
         messages.extend(self.history)
         messages.append(HumanMessage(content=formatted_prompt))
 
+        logger.info("Model started generating response")
         full_response = []
         for chunk in self.model.stream(messages):
             if not chunk.content:
@@ -178,11 +183,13 @@ class LLMService:
             full_response.append(token)
             yield token
 
+        response_content = ''.join(full_response)
+        response_content += context.image_context
+
         if context.images:
-            full_response.append(context.images)
             yield context.images
 
-        response_content = ''.join(full_response)
+        logger.info("Model ended generating response")
 
         self.history.append(HumanMessage(content=query))
         self.history.append(AIMessage(content=response_content))

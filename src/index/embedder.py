@@ -40,12 +40,18 @@ class EmbeddingService:
             cache_dir = str(self.cache_dir)
         )
 
+        text_local = os.path.exists(os.path.join(self.cache_dir, "models--BAAI--bge-m3"))
+        logger.info(f"BGE-M3 source: {'Local Cache' if text_local else 'Remote Download'}")
+
         # 2. Image Model (Multilingual CLIP)
         self.clip_model = SentenceTransformer(
             'sentence-transformers/clip-ViT-B-32-multilingual-v1',
             device=self.device,
             cache_folder = str(self.cache_dir)
         )
+
+        clip_local = os.path.exists(os.path.join(self.cache_dir, "sentence-transformers_clip-ViT-B-32-multilingual-v1"))
+        logger.info(f"CLIP source: {'Local Cache' if clip_local else 'Remote Download'}")
 
         self.DENSE_DIM = self.text_model.model.model.config.hidden_size #1024
         self.VOCAB_SIZE = self.text_model.tokenizer.vocab_size # 250002

@@ -73,5 +73,4 @@ class Settings(BaseSettings):
     def PROMPTS_DIR_PATH(self) -> Path:
         return self.DATA_DIR / "prompt_templates"
 
-
 settings = Settings()
