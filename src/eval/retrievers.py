@@ -23,18 +23,18 @@ def search_hybrid_text(query, k):
     search_result = storage._search_text_core(vectors, k)
     return search_result.points
 
-
+# 1. Clip
 def search_clip_only(query, k):
-    vectors = embedder.embed_image(query) # CLIP embedding
+    vectors = embedder.embed_image(query)
     return storage.client.search(
         collection_name=storage.IMAGE_COLLECTION,
-        query_vector=vectors, # Це список float
+        query_vector=vectors,
         using='image',
         limit=k,
         with_payload=True
     )
 
-# 2. CLIP + Dense (Картинка + Семантика опису)
+# 2. CLIP + Dense
 def search_clip_dense(query, k):
     vectors = embedder.embed_hybrid(query)
     # Ручний запит Qdrant без Sparse
@@ -49,7 +49,7 @@ def search_clip_dense(query, k):
         with_payload=True
     ).points
 
-# 3. Hybrid (CLIP + Dense + Sparse) - Ваш максимум
-def search_full_hybrid(query, k):
+# 3. Hybrid (CLIP + Dense + Sparse)
+def search_hybrid_image(query, k):
     vectors = embedder.embed_hybrid(query)
     return storage._search_image_core(vectors, k).points

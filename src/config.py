@@ -75,6 +75,11 @@ class Settings(BaseSettings):
 
     @computed_field
     @cached_property
+    def EVAL_IMAGES_DF_PATH(self) -> Path:
+        return self.DFS_PATH / "eval_images.parquet"
+
+    @computed_field
+    @cached_property
     def PROMPTS_DIR_PATH(self) -> Path:
         return self.DATA_DIR / "prompt_templates"
 
