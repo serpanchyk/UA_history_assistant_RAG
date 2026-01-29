@@ -6,6 +6,8 @@ from langchain_core.prompts import PromptTemplate
 
 import os
 from typing import Any
+from dotenv import load_dotenv
+load_dotenv()
 
 from src.fs_io.filesystem import read_text_file
 from src import PROMPTS_DIR_PATH

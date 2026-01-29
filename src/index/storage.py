@@ -305,17 +305,7 @@ class QdrantVectorStore(VectorStore):
                     if success:
                         b64_data = base64.b64encode(buffer).decode('utf-8')
 
-                        caption = doc.page_content.replace('"', '&quot;')
-
-                        html_content += (
-                            f'<br>'
-                            f'<div style="margin: 15px 0;">'
-                            f'<img src="data:image/png;base64,{b64_data}" '
-                            f'alt="{caption}" '
-                            f'style="max-width: 100%; max-height: 400px; border-radius: 8px;">'
-                            f'<p style="font-size: 0.8em; color: gray; margin-top: 5px;"><em>{caption}</em></p>'
-                            f'</div>'
-                        )
+                        html_content += f'<div style="display: inline-block; margin: 15px;"><img src="data:image/png;base64,{b64_data}"></div>'
                 except Exception as e:
                     logger.error(f"Failed to encode image {image_path}: {e}")
 
