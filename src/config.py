@@ -70,7 +70,14 @@ class Settings(BaseSettings):
 
     @computed_field
     @cached_property
+    def EVAL_TEXTS_DF_PATH(self) -> Path:
+        return self.DFS_PATH / "eval_texts.parquet"
+
+    @computed_field
+    @cached_property
     def PROMPTS_DIR_PATH(self) -> Path:
         return self.DATA_DIR / "prompt_templates"
+
+
 
 settings = Settings()

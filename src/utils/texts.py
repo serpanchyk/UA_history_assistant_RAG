@@ -11,26 +11,6 @@ MIN_TEXT_LENGTH = 6
 
 ALLOWED_CATEGORIES = {"L", "N", "P", "Z"}
 
-def fix_text(text: str) -> str:
-    """
-    Fix mixed-encoding Ukrainian text:
-    - cp1251 read as utf-8
-    - cp1251 read as latin1
-    - broken unicode IPA-like symbols
-    """
-
-    try:
-        text = text.encode("latin1").decode("cp1251")
-    except Exception:
-        pass
-
-    try:
-        text = text.encode("utf-8", errors="ignore").decode("utf-8")
-    except Exception:
-        pass
-
-    return text
-
 def normalize_text(text: str) -> str:
     if not isinstance(text, str):
         return text
@@ -69,7 +49,7 @@ def block_to_text(block: dict) -> str | None:
         for span in line['spans'])
         for line in block['lines'])
 
-    text = fix_text(text)
+    text = text
 
     normalized = normalize_text(text)
 

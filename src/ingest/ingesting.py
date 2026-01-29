@@ -107,6 +107,8 @@ class PDFIngestor:
         """
         chunks: list[dict] = chunking(text_blocks_df)
         chunks_df: pd.DataFrame = pd.DataFrame(chunks)
+        chunks_df['id'] = range(len(chunks_df))
+
         logger.info("Converted text blocks to chunks.")
         return chunks_df
 
