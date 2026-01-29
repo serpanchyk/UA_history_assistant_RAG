@@ -47,23 +47,21 @@ def generate_image_eval_dataset():
             row = valid_images.sample(1).iloc[0]
             caption = row['caption']
 
-            # Check for duplicates in current session
             if any(d['expected_image_path'] == row['path'] for d in image_eval_data):
                 continue
 
             prompt = f"""
-            Excerpt from a caption of image of history textbook of Ukraine:
+            Опис зображення з підручника історії:
             "{caption}"
-
-            Your task: Formulate an exam question (NMT style) based on this excerpt.
-
-            Instructions:
-            1. **Focus on the Core:** Ask about the key event, person, date, or consequence.
-            2. **Style:** The question should be clear and specific.
-            3. **Output Language:** Ukrainian.
-            4. **Use keyword** mentions the names if historical figures, events, buildings, arts. 
-
-            Your Question (in Ukrainian):
+            
+            Сформулюй короткий запит користувача, який хоче побачити саме це зображення.
+            Запит має бути природнім, наприклад:
+            - "Покажи ..."
+            - "Як виглядала..."
+            - "Ким був ..."
+            - 
+            
+            Запит:
             """
 
             response = llm_gen.invoke(prompt)

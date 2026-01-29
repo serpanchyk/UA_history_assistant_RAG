@@ -131,8 +131,8 @@ class LLMService:
 
         retrieved = self.storage.retrieve_all(
             condensed_query,
-            k_text=1,
-            k_image=1
+            k_text=3,
+            k_image=2
         )
 
         logger.info('Retrieved context for llm: %s', retrieved)
@@ -188,6 +188,7 @@ class LLMService:
         response_content = ''.join(full_response)
         response_content += context.image_context
 
+        yield '\n'
         if context.images:
             yield context.images
 
