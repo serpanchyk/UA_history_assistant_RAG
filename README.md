@@ -43,7 +43,7 @@ AZURE_OPENAI_ENDPOINT=[https://your-resource.openai.azure.com/](https://your-res
 AZURE_OPENAI_API_VERSION=2024-05-01-preview
 
 # Qdrant Config
-QDRANT_URL=http://localhost:6333  # Use 'qdrant_storage' if inside Docker network
+QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=
 
 # Project Settings
@@ -58,7 +58,3 @@ docker-compose up --build
 ```
 
 Open your browser to: http://localhost:7860
-
----
-
-Run loc
