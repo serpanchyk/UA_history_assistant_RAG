@@ -9,13 +9,16 @@ storage = QdrantVectorStore(embedder)
 # 1. Dense only
 def search_dense_text(query, k):
     vectors = embedder.embed_text(query)
-    return storage.client.search(
+    return storage.client.query_points(
         collection_name=storage.TEXT_COLLECTION,
-        query_vector=vectors['dense'],
+        prefetch=[
+            models.Prefetch(query=vectors['dense'], using='dense', limit=k)
+        ],
+        query=vectors['dense'],
         using='dense',
         limit=k,
         with_payload=True
-    )
+    ).points
 
 # 2. Hybrid (Dense + Sparse)
 def search_hybrid_text(query, k):
@@ -25,14 +28,15 @@ def search_hybrid_text(query, k):
 
 # 1. Clip
 def search_clip_only(query, k):
-    vectors = embedder.embed_image(query)
-    return storage.client.search(
+    vector = embedder.embed_image(query)
+
+    return storage.client.query_points(
         collection_name=storage.IMAGE_COLLECTION,
-        query_vector=vectors,
+        query=vector,
         using='image',
         limit=k,
         with_payload=True
-    )
+    ).points
 
 # 2. CLIP + Dense
 def search_clip_dense(query, k):
