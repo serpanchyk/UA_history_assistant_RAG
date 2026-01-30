@@ -25,4 +25,4 @@ RUN python -m pip install --upgrade pip && \
 COPY . .
 
 ENV PYTHONPATH=/app
-CMD ["python", "main.py"]
+CMD ["python", "app.py"]
